@@ -1,4 +1,5 @@
 #!/bin/bash
+## CMD=mv "./甲结节12_甲状腺结节标注_标注_审核_仲裁" "thyroidNodules_axp012"
 function renameFolderToEng() {
 	for ifolder in `find . -maxdepth 1 -type d -not -path .`; do
 		local inewName=`sed  's/[^0-9]\+\([0-9]\{1,\}\)[^0-9]*/thyroidNodules_axp-\1/g' <<< "${ifolder}"`
