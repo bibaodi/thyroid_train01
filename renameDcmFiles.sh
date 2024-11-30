@@ -1,5 +1,6 @@
 #/bin/bash
 
+## 	1. dcm文件重命名'甲结节1' -> 'thyroidNodules-axp-001.dcm';
 function renameAllDcmfile() {
 	for idcm in `find ./ -type f ! -name '*.json'  -size +10M` ;
 		do 
