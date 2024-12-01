@@ -14,7 +14,7 @@ function renameAllDcmfile() {
 			#echo "-->> ${infDcm}"; 
 			local CMD="mv ${fullPath} ${infDcm}"
 			echo "CMD=${CMD}"
-			read -p "confirm Do It? y/n " ans
+			read -p "confirm Do It? y/n "$'\n' ans
 			test ${ans} == 'y' && echo "do it" && eval ${CMD}
 			#eval ${CMD}
 		done
@@ -29,7 +29,7 @@ function renameDcmRemoveDuplicate(){
 			local CMD="mv ${idcm} ${indcm2}"
 			echo "CMD=${CMD}" 
 			if test ${yesForAll} -eq 0 ; then
-				read -p "confirm Do It? y/n " ans
+				read -p "confirm Do It? y/n "$'\n' ans
 				test ${ans} == 'y' && echo "do it" && eval ${CMD}
 				test ${ans} == 'A' && echo "yes for all." && yesForAll=1 && eval ${CMD}
 			else
