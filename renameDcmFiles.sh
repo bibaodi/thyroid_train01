@@ -1,8 +1,7 @@
 #/bin/bash
-
-## 	1. dcm文件重命名'甲结节1' -> 'thyroidNodules-axp-001.dcm';
+##     1. dcm文件重命名'甲结节1' -> 'thyroidNodules-axp-001.dcm';
 function renameAllDcmfile() {
-	for idcm in `find ./ -type f ! -name '*.json'  -size +10M` ;
+	for idcm in `find ./ -type f ! -name '*.json'  -size +2M` ;
 		do 
 			fullPath=`realpath "${idcm}"`
 			baseName=`basename "${fullPath}"`
@@ -13,11 +12,33 @@ function renameAllDcmfile() {
 			infDcm="${dirName}/${inewDcm}"
 			#echo "${idcm}-->${inewDcm} -->> ${infDcm}"; 
 			#echo "-->> ${infDcm}"; 
-			CMD="mv ${fullPath} ${infDcm}"
-			local echo "CMD=${CMD}"
-			eval ${CMD}
+			local CMD="mv ${fullPath} ${infDcm}"
+			echo "CMD=${CMD}"
+			read -p "confirm Do It? y/n " ans
+			test ${ans} == 'y' && echo "do it" && eval ${CMD}
+			#eval ${CMD}
 		done
 }
 
-renameAllDcmfile;
+function renameDcmRemoveDuplicate(){
+	yesForAll=0
+	for idcm in `find ./ -type f  -name '*.dcm'  -size +2M`;
+		do 
+			indcm2=`sed 's/\.dcm\.dcm*/.dcm/' <<< "${idcm}"`
+			
+			local CMD="mv ${idcm} ${indcm2}"
+			echo "CMD=${CMD}" 
+			if test ${yesForAll} -eq 0 ; then
+				read -p "confirm Do It? y/n " ans
+				test ${ans} == 'y' && echo "do it" && eval ${CMD}
+				test ${ans} == 'A' && echo "yes for all." && yesForAll=1 && eval ${CMD}
+			else
+				eval ${CMD}
+			fi
+		done
 
+}
+
+#renameAllDcmfile;
+
+renameDcmRemoveDuplicate;
