@@ -70,19 +70,21 @@ def convert_nodule_json_v2(json_file, target_json_dir):
     # 01-read from nodule-json-file
     with open(json_file, 'r') as f:
         json_ = json.load(f)
-        print("json has item number=", len(json_))
-        for i in json_:
-            print(f"\titem[{i}]")
         all_imgs_datas = json_['data']
-        print("total has data number=", len(all_imgs_datas), type(all_imgs_datas))
-        print(type(all_imgs_datas[0]))
         one_data_item = all_imgs_datas[0]
-        print(f"\titems in \\data\\")
-        for i in one_data_item:
-            print(f"\t\t{i}")
-#        print(f"\t\t lesions in data.")
-        print("\t\t one_data_item['frameNumber']:", one_data_item['frameNumber'])
 
+        if False:#debug
+            print("json has item number=", len(json_))
+            for i in json_:
+                print(f"\titem[{i}]")
+            print("total has data number=", len(all_imgs_datas), type(all_imgs_datas))
+            print(type(all_imgs_datas[0]))
+
+            print(f"\titems in \\data\\")
+            for i in one_data_item:
+                print(f"\t\t{i}")
+            #print(f"\t\t lesions in data.")
+            print("\t\t one_data_item['frameNumber']:", one_data_item['frameNumber'])
 
         ## extract infomation --all images.
         for one_data_item in all_imgs_datas:
@@ -109,7 +111,7 @@ def convert_nodule_json_v2(json_file, target_json_dir):
 
                     points_len = int((len(polygonPoints)))
                     if points_len < 4:
-                        print(f"points not enough 4:[{target_json_dir}/{filename}], ignore it.")
+                        print(f"\tpoints not enough 4:[{target_json_dir}/{filename}], ignore it.")
                         continue
 
                     all_points = numpy.zeros((points_len, 2))
@@ -125,7 +127,7 @@ def convert_nodule_json_v2(json_file, target_json_dir):
                             available_pts.append(all_points[pt])
 
                     if len(available_pts) < 4:
-                        print(f"available points not enough 4:[{target_json_dir}/{filename}], ignore it.")
+                        print(f"\tavailable points not enough 4:[{target_json_dir}/{filename}], ignore it.")
                         continue
                     #--04 create target labelme format json
                     #if lesion_idx>0:
@@ -148,7 +150,7 @@ def convert_nodule_json_v2(json_file, target_json_dir):
                 #print(f">>>>>delete file{target_json_name}")
             with open(target_json_name, 'w') as jfp:
                 json.dump(target_json, jfp)
-
+    print(f"\t<<<one case done.")
 
     return 0
 
@@ -190,11 +192,15 @@ def list_File_withSuffix(directory, suffix:str="_MARK.json"):
 
 def processMultiFolders(working_dir:str):
     casefolders = list_folders(working_dir)
-    for icase in casefolders:
+    totalCaseCount=len(casefolders)
+    #caseindex=0
+
+    for caseindex, icase in  enumerate(casefolders):
+        print(f"[{caseindex}/{totalCaseCount}] : processing... {icase}")
         icasedir=os.path.join(working_dir, icase)
         foldersInCase=list_folders(icasedir)
         jsonInCase=list_File_withSuffix(icasedir)
-        print(foldersInCase, jsonInCase)
+        #print(foldersInCase, jsonInCase)
 
         if(len(jsonInCase)<1 or len(foldersInCase)<1):
             print(f"caseDir:[{icasedir}] missing json/dicom-img-folder, ignore....")
