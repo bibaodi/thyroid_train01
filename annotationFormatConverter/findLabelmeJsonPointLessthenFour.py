@@ -8,7 +8,9 @@ def findThePointInOneShapeLessN(json_file:str, leastPointCount:int=4):
         deal with one xiaobai's json which have multi-labelme json
         - if points less than 4, ignore it. --eton@241202
     """
-
+    #print(f"\t\tdebug:{json_file}")
+    if not os.path.basename(json_file).startswith("frm-"):
+        return
     if not os.path.exists(json_file):
         print(f"\tjson target not exist.[{json_file}]")
         return -1
@@ -52,7 +54,7 @@ def list_folders(directory):
 def list_File_withSuffix(directory, suffix:str=".json"):
     try:
         # List all entries in the directory
-        entries = os.listdir(directory)
+        entries = sorted(os.listdir(directory))
         # Filter out only the directories
         folders = [entry for entry in entries if entry.endswith(suffix)]
         return folders
@@ -61,7 +63,7 @@ def list_File_withSuffix(directory, suffix:str=".json"):
         return []
 
 def processMultiFolders(working_dir:str):
-    casefolders = list_folders(working_dir)
+    casefolders = sorted(list_folders(working_dir))
     totalCaseCount=len(casefolders)
     #caseindex=0
 
@@ -74,9 +76,10 @@ def processMultiFolders(working_dir:str):
         if len(jsonInCase)<1 :
             print(f"caseDir:[{icasedir}] missing json/dicom-img-folder, ignore....")
             continue
-        json_file_name = os.path.join(icasedir, jsonInCase[0])
-
-        failed = findThePointInOneShapeLessN(json_file_name, 4)
+        for ijsonIncase in jsonInCase:
+            json_file_name = os.path.join(icasedir, ijsonIncase)
+            failed = findThePointInOneShapeLessN(json_file_name, 4)
+        print(f"\t\t{len(jsonInCase)} json checked.")
         # if 0 != failed:
         #     print(f"\tconvert failed!!!")
         # else:
@@ -86,5 +89,7 @@ def processMultiFolders(working_dir:str):
 
 if "__main__" == __name__:
     working_dir=r"/mnt/f/240926-RayShap/241129-thyroid-datas/52-debug/thyroidNodules_axp-086.dcm_frms/"
-    working_dir=r'/mnt/f/240926-RayShap/241129-thyroid-datas/31-labelmeFormatOrganized/231129-thyroidNodulesAix72'
+    working_dir=r'/data/raw_data/thyroidNodules/thyNodu241202/bad-datas'
+    working_dir=r'/data/raw_data/thyroidNodules/thyNodu241202/thyroidNodulesAixMarkGood31V1'
+    #working_dir=r'/tmp/debug33'
     processMultiFolders(working_dir)
