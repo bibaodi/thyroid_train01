@@ -214,6 +214,30 @@ def processMultiFolders(working_dir:str):
         else:
             print("success,,,")
 
+def processMultiFolders4Patch(working_dir:str):
+    casefolders = list_folders(working_dir)
+    totalCaseCount=len(casefolders)
+    #caseindex=0
+
+    for caseindex, icase in  enumerate(casefolders):
+        print(f"[{caseindex}/{totalCaseCount}] : processing... {icase}")
+        icasedir=os.path.join(working_dir, icase)
+        #using the parent folder
+        jsonInCase=list_File_withSuffix(icasedir)
+        #print(foldersInCase, jsonInCase)
+
+        if(len(jsonInCase)<1 ):
+            print(f"caseDir:[{icasedir}] missing json/dicom-img-folder, ignore....")
+            continue
+        json_file_name = os.path.join(icasedir, jsonInCase[0])
+        dcm_folder_name = icasedir
+
+        failed = convert_nodule_json_v2(json_file_name, dcm_folder_name)
+        if 0 != failed:
+            print(f"\tconvert failed!!!")
+        else:
+            print("success,,,")
+
 def testOnSingleJson():
     jsonf=r'/mnt/f/240926-RayShap/241129-thyroid-datas/52-debug/thyroidNodules_axp087/1.2.250.1.204.5.8373724313.20210416143848345628.2.0.50.80.2.20241111095056666_MARK.json'
     targetHome=r'/mnt/f/240926-RayShap/241129-thyroid-datas/52-debug/thyroidNodules_axp087/targetJsonLabelformatDir'
@@ -221,5 +245,6 @@ def testOnSingleJson():
 
 
 if "__main__" == __name__:
-    working_dir=r"/mnt/f/240926-RayShap/241129-thyroid-datas/52-debug"
-    processMultiFolders(working_dir)
+    working_dir=r"/mnt/f/241129-zhipu-thyroid-datas/12-received_data-updates/patch241204"
+    #processMultiFolders(working_dir)
+    processMultiFolders4Patch(working_dir)

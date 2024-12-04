@@ -11,5 +11,12 @@ function renameFolderToEng() {
 done
 }
 
+function copyPatchParsedJsonToTarget(){
+	for icase in `find . -type d -not -path .`; do 
+		CMD="cp ${icase}/*.json  /mnt/f/241129-zhipu-thyroid-datas/31-labelmeFormatOrganized/231129-thyroidNodulesAix72/${icase}.dcm_frms/"; 
+		echo "CMD=$CMD" && eval $CMD; 
+	done
+}
+
 renameFolderToEng;
 
