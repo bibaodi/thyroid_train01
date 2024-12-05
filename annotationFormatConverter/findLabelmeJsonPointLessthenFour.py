@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 
 def findThePointInOneShapeLessN(json_file:str, leastPointCount:int=4):
     """
@@ -91,5 +92,8 @@ if "__main__" == __name__:
     working_dir=r"/mnt/f/240926-RayShap/241129-thyroid-datas/52-debug/thyroidNodules_axp-086.dcm_frms/"
     working_dir=r'/data/raw_data/thyroidNodules/thyNodu241202/bad-datas'
     working_dir=r'/data/raw_data/thyroidNodules/thyNodu241202/thyroidNodulesAixMarkGood31V1'
-    #working_dir=r'/tmp/debug33'
+    working_dir=r'/data/raw_data/thyroidNodules/thyNodu241202/241129-thyroidNodulesAix72'
+    if len(sys.argv) > 1:
+        working_dir=sys.argv[1]
+    print(f"process folder:${working_dir}")
     processMultiFolders(working_dir)
