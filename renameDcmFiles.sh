@@ -43,6 +43,6 @@ function orgnizeAllDcmfolderToNew() {
  mkdir ../231129-thyroidNodulesAix72 && for ifolder in `find ./ -type d -name "*.dcm_frms"`; do mv ${ifolder} ../231129-thyroidNodulesAix72/ ; done
 }
 
-#renameAllDcmfile;
+renameAllDcmfile;
 
-renameDcmRemoveDuplicate;
+#renameDcmRemoveDuplicate;
