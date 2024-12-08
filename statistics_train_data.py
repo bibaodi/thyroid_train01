@@ -2,9 +2,8 @@
 # statistics the data features about train and test.
 # eton@241207
 
-
-
 import os
+import sys
 from pathlib import Path
 import pandas as pd
 
@@ -72,8 +71,9 @@ def processImglistLines(imgnamelines:list):
     #print(f"debug: dcm name set:{type(sortedList)}")
     return sortedList
 
-def readImgListFile():
-    iOneResfolder=os.path.join(trainResFolderParent, resFolder)
+def readImgListFile(trainResFolder:str):
+    #iOneResfolder=os.path.join(trainResFolder, resFolder)
+    iOneResfolder=trainResFolder
     print(iOneResfolder)
 
     dirItems = sorted(os.listdir(iOneResfolder))
@@ -111,5 +111,8 @@ def readImgListFile():
 
 
 if __name__ == "__main__":            
-    readImgListFile()
+    if len(sys.argv)<2: 
+        print(f"Err: Usage:\n\tApp Train-Result-Folder")
+    else:
+        readImgListFile(sys.argv[1])
 
