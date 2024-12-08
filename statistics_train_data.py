@@ -109,10 +109,14 @@ def readImgListFile(trainResFolder:str):
 # start
 
 
-
+UsageStr="python statistics_train_data.py  /train/history_train/res_thyNod1.7PurgeNoLabelImgs_mul_nodules1.6_axpG63purge_224_20241208T1229_sz224/ /data/raw_data/thyroidNodules/thyNodu241205/241208-thyNodulesG63P/"
 if __name__ == "__main__":            
-    if len(sys.argv)<2: 
-        print(f"Err: Usage:\n\tApp Train-Result-Folder")
+    if len(sys.argv)<3: 
+        print(f"Err: Usage:\n\tApp Train-Result-Folder dataset-folder\n{UsageStr}")
     else:
-        readImgListFile(sys.argv[1])
-
+        trainResFolder=sys.argv[1]
+        dataActualFolder=sys.argv[2]
+        if os.path.exists(trainResFolder) and os.path.exists(dataActualFolder):
+            readImgListFile(sys.argv[1])
+        else:
+            print(f"Err: please confirm trainRes and dataset exist.")
