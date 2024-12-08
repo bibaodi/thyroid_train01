@@ -7,6 +7,7 @@
 # eton@241208
 
 import os
+import sys
 from pathlib import Path
 import re
 
@@ -123,10 +124,16 @@ def processMultiFolders(working_dir:str):
         findminmaxJsonIndex(Path(icasedir))
         #break
 
-working_dir="/mnt/f/241129-zhipu-thyroid-datas/31-labelmeFormatOrganized/241207_all82AixThyroidNodules"
-working_dir="/tmp/sss"
-processMultiFolders(working_dir)
+#working_dir="/mnt/f/241129-zhipu-thyroid-datas/31-labelmeFormatOrganized/241207_all82AixThyroidNodules"
 
-if __name__ == "__main__":            
+def test01():
     dcmfoldername=f"thyroidNodules_axp-001.dcm_frms"
     findminmaxJsonIndex(dcmfoldername)
+
+if __name__ == "__main__": 
+    if len(sys.argv)<2:
+        print(f"Usage:\n\t App DcmRootDir")
+    else:        
+        working_dir=sys.argv[1]
+        processMultiFolders(working_dir)
+
