@@ -7,15 +7,18 @@ def getUSimgRectByGradientPhase(gray_image):
 
     # Compute the gradient in the x direction
     grad_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
-    
+    np.savetxt('output-gradX.csv', grad_x, delimiter=',' ,fmt='%.1f')    
     # Compute the gradient in the y direction
     grad_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
+    np.savetxt('output-gradY.csv', grad_y, delimiter=',', fmt='%.1f')    
     
     # Compute the gradient magnitude
     grad_magnitude = cv2.magnitude(grad_x, grad_y)
+    np.savetxt('output-magnitude.csv', grad_magnitude, delimiter=',',  fmt='%.1f')    
     print(f"grad_magnitude {grad_magnitude.shape}, {grad_magnitude[300:304,300:305]}")
     # Compute the phase angle of the gradient vectors
     grad_phase = cv2.phase(grad_x, grad_y, angleInDegrees=True)
+    np.savetxt('output-phase.ecsv', grad_phase, delimiter=',',  fmt='%.1f')    
     grad_phase[grad_phase==90]=0
     grad_phase[grad_phase==180]=0
     grad_phase[grad_phase==270]=0
