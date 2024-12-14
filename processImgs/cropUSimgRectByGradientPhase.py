@@ -13,6 +13,83 @@ class CropUsImageClass:
 
     def getUSimgRectByGradientPhase(self, gray_image): 
         # Load the image in grayscale
+        kernelSize=3
+        outputImgDepth=cv2.CV_32F #-1
+        # Compute the gradient in the x direction
+        ##grad_x = cv2.Sobel(gray_image, outputImgDepth, 1, 0, ksize=kernelSize)
+        grad_x = cv2.Scharr(gray_image, outputImgDepth, 1, 0)
+        np.savetxt('output-gradX.csv', grad_x, delimiter=',' ,fmt='%.1f')    
+        # Compute the gradient in the y direction
+        ##grad_y = cv2.Sobel(gray_image, outputImgDepth, 0, 1, ksize=kernelSize)
+        grad_y = cv2.Scharr(gray_image, outputImgDepth, 0, 1)
+        np.savetxt('output-gradY.csv', grad_y, delimiter=',', fmt='%.1f')    
+               
+        topRow=-1
+        bottomRow=-1
+        leftCol=-1
+        rightCol=-1
+
+        rowCnt=grad_y.shape[0]
+        colCnt=grad_y.shape[1]
+        left_one_third=0.3*colCnt
+        bottom_one_third=0.66*rowCnt
+
+        rowValThreshold=colCnt*self.m_percentage
+        for irow in range(rowCnt):
+            irowval=grad_y[irow, :]
+            #print(f"debug:irowval={irowval}") if irow ==-1 else None
+            nonZeroCntTop=np.sum(irowval>0)
+            nonZeroCntBottom=np.sum(irowval<0)
+            #01-topline and left, right.
+            if nonZeroCntTop > rowValThreshold:
+                #print(f"debug:row[{irow}]: has non zero item is: {nonZeroCnt}")
+                if topRow<3:
+                    topRow=irow
+                    thisRowVal=irowval
+                    for xinRow, xval in enumerate(thisRowVal):
+                        if xval >0 :
+                            setThisAsLeft=True
+                            for iextend in range(xinRow, xinRow+10, 1):
+                                if thisRowVal[iextend] <=0:
+                                    setThisAsLeft=False
+                                    break;
+                            if setThisAsLeft:
+                                print(f"debug: found xleft in top line={xinRow}")
+                                leftCol=xinRow
+                                break;
+                    for xinRow in range(len(thisRowVal)-1, 0, -1):#right to left
+                        xval=thisRowVal[xinRow]
+                        if xval >0 :
+                            setThisAsRight=True
+                            for iextend in range(xinRow, xinRow+10, 1):
+                                if thisRowVal[iextend] <=0:
+                                    setThisAsRight=False
+                                    break;
+                            if setThisAsRight:
+                                print(f"debug: found rightCol in top line={xinRow}")
+                                rightCol=xinRow
+                                break;
+            #02-bottom
+            if nonZeroCntBottom > rowValThreshold*0.2:
+                bottomRow=irow
+
+        while (bottomRow < bottom_one_third):
+            rowValThreshold=0.75*rowValThreshold
+            for irow in range(rowCnt-1, bottomRow, -1):
+                irowval=grad_y[irow, :]
+                nonZeroCnt=np.sum(np.abs(irowval)>1)
+                if nonZeroCnt > rowValThreshold:
+                    bottomRow=irow
+                    
+                
+        print(f"topRow={topRow}, Bottom={bottomRow}")
+
+        print(f"leftCol={leftCol}, rightCol={rightCol}")
+
+        return [topRow, bottomRow, leftCol,rightCol]
+
+    def getUSimgRectByGradientPhaseV1(self, gray_image): 
+        # Load the image in grayscale
 
         # Compute the gradient in the x direction
         grad_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
@@ -221,3 +298,7 @@ if __name__ == "__main__":
         cropimg=CropUsImageClass(fp)
         cropimg.cropImageV3(imageBgr)
 
+# test cli: 
+"""
+ls -1 *.png|xargs -I 'var' python /mnt/d/000-srcs/210822-thyroid_train/processImgs/cropUSimgRectByGradientPhase.py `realpath 'var'`
+"""
