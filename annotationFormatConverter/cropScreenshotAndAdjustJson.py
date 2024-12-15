@@ -204,7 +204,7 @@ class CropUsImageClass:
 
         if not lmstartFile.exists():
             print(f"Error: json file Not Exist:{lmstartFile}")
-            return
+            return -1
         with open(lmstartFile, 'r') as f:
             jims=json.load(f)
 
@@ -215,6 +215,8 @@ class CropUsImageClass:
         with open(lmstartFile, 'w') as jfp:
             json.dump(jims, jfp)
 
+        return 0
+
     def main_processDicomFolder(self, dcmfolder:pathlib):
         imgfiles=[i for i in sorted(dcmfolder.glob('*.png'))]
         firstImgfile=imgfiles[0]
@@ -222,15 +224,32 @@ class CropUsImageClass:
         self.m_imgname = firstImgfile
         imageBgr=cv2.imread(firstImgfile)
 
-        self.getCropInfoAndSaveToLmstartJson(imageBgr)
+        return self.getCropInfoAndSaveToLmstartJson(imageBgr)
 
+def processJsonInCases(casesFolder):
+    working_dir=pathlib.Path(casesFolder)
+    casefolders = working_dir.iterdir()
+    for icase in casefolders:
+        icasedir=os.path.join(working_dir, icase)
+        
+        dcmfolder=icasedir
+        print(f"\n\nProcess:{dcmfolder}")
+        cropimg=CropUsImageClass(dcmfolder)
+        failed =cropimg.main_processDicomFolder(Path(dcmfolder))
+        
+        if 0 != failed:
+            print(f"\tconvert failed!!!")
+        else:
+            print("success,,,")
 
 if __name__ == "__main__":
     if len(sys.argv)<2:
         print(f"App Image")
     else:
         #fp = '/media/eton/hdd931g/42-workspace4debian/10-ExtSrcs/ITKPOCUS/itkpocus/tests/data/83CasesFirstImg/thyroidNodules_axp-042_frm-0001.png'
-        dcmfolder=sys.argv[1]
-        print(f"\n\nProcess:{dcmfolder}")
-        cropimg=CropUsImageClass(dcmfolder)
-        cropimg.main_processDicomFolder(Path(dcmfolder))
+        alldcmfolder=sys.argv[1]
+        print(f"\n\nProcess:{alldcmfolder}")
+        processJsonInCases(alldcmfolder)
+"""
+python /mnt/d/000-srcs/210822-thyroid_train/annotationFormatConverter/cropScreenshotAndAdjustJson.py `pwd`
+"""
