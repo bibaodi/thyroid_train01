@@ -13,6 +13,98 @@ class CropUsImageClass:
 
     def getUSimgRectByGradientPhase(self, gray_image): 
         # Load the image in grayscale
+        print(f"debug:image shape={gray_image.shape}")
+        kernelSize=3
+        outputImgDepth=cv2.CV_32F #-1
+        # Compute the gradient in the x direction
+        ##grad_x = cv2.Sobel(gray_image, outputImgDepth, 1, 0, ksize=kernelSize)
+        #grad_x = cv2.Scharr(gray_image, outputImgDepth, 1, 0)
+        #np.savetxt('output-gradX.csv', grad_x, delimiter=',' ,fmt='%.1f')    
+        # Compute the gradient in the y direction
+        ##grad_y = cv2.Sobel(gray_image, outputImgDepth, 0, 1, ksize=kernelSize)
+        grad_y = cv2.Scharr(gray_image, outputImgDepth, 0, 1)
+        #plt.imshow(grad_y)
+        #print(f"debug:image gradient shape={grad_y.shape}")
+        np.savetxt('output-gradY.csv', grad_y, delimiter=',', fmt='%.1f')    
+
+        #print(f"debug:iRowVals[ 23]={grad_y[24,:]}")
+               
+        topRow=-1
+        bottomRow=-1
+        leftCol=-1
+        rightCol=-1
+
+        rowCnt=grad_y.shape[0]
+        colCnt=grad_y.shape[1]
+        left_one_third=0.3*rowCnt
+        bottom_one_third=0.66*rowCnt
+        rowValThreshold=colCnt*self.m_percentage
+        
+        for irow in range(rowCnt):
+            iRowVals=grad_y[irow, :]
+            #print(f"debug:iRowVals={iRowVals}") if irow ==-1 else None
+            gtZeroCntTop=np.sum(iRowVals>0)
+            nonZeroCntBottom=np.sum(iRowVals<0)
+            #print(f"debug:row[{irow}]: has non zero item is: {gtZeroCntTop}, THRESOLD={rowValThreshold}")
+            #01-topline and left, right.
+            if gtZeroCntTop > rowValThreshold:
+                if topRow<3:
+                    thisRowPixelsVals=gray_image[irow,:]
+                    if np.mean(thisRowPixelsVals) > 7:
+                        print(f"debug:row[{irow}]: image mean value is: {np.mean(thisRowPixelsVals)}. mostly a wrong line in header of screenshot. ignore this line.")
+                        continue
+                    #print(f"debug:row[{irow}]: has non zero item is: {gtZeroCntTop}, THRESOLD={rowValThreshold}")
+                    #print(f"debug:row[{irow}]: image value is: {thisRowPixelsVals}")
+                    topRow=irow
+                    thisRowVal=iRowVals
+
+                    for xinRow, xval in enumerate(thisRowVal):
+                        if xval >0 :
+                            setThisAsLeft=True
+                            for iextend in range(xinRow, xinRow+10, 1):
+                                if (iextend >= colCnt) or thisRowVal[iextend] <=0:
+                                    setThisAsLeft=False
+                                    topRow=-1
+                                    break
+                            if setThisAsLeft:
+                                print(f"debug: found xleft in top line={xinRow}")
+                                leftCol=xinRow
+                                break
+                    for xinRow in range(len(thisRowVal)-1, 0, -1):#right to left
+                        xval=thisRowVal[xinRow]
+                        if xval >0 :
+                            setThisAsRight=True
+                            for iextend in range(xinRow, xinRow+10, 1):
+                                if  (iextend >= colCnt) or thisRowVal[iextend] <=0:
+                                    setThisAsRight=False
+                                    break
+                            if setThisAsRight:
+                                print(f"debug: found rightCol in top line={xinRow}")
+                                rightCol=xinRow
+                                break
+            #02-bottom
+            if nonZeroCntBottom > rowValThreshold*0.2:
+                bottomRow=irow
+
+        while (bottomRow < bottom_one_third):
+            rowValThreshold=0.75*rowValThreshold
+            for irow in range(rowCnt-1, bottomRow, -1):
+                iRowVals=grad_y[irow, :]
+                nonZeroCnt=np.sum(np.abs(iRowVals)>1)
+                if nonZeroCnt > rowValThreshold:
+                    bottomRow=irow
+                    
+                
+        print(f"topRow={topRow}, Bottom={bottomRow}")
+        print(f"leftCol={leftCol}, rightCol={rightCol}")
+
+        return [topRow, bottomRow, leftCol,rightCol]    
+
+    def getUSimgRectByGradientPhaseV2(self, gray_image):
+        """
+        use top line get top.left.right;
+        """ 
+        # Load the image in grayscale
         kernelSize=3
         outputImgDepth=cv2.CV_32F #-1
         # Compute the gradient in the x direction
@@ -203,6 +295,30 @@ class CropUsImageClass:
         print(f"debug:cropped_image.shape={cropped_image.shape}, newName={newimgname}")
         cv2.imwrite(newimgname, cropped_image)
 
+    def cropImageV4(self, origin_img:np.ndarray):
+        self.m_oriImage=origin_img.copy()
+        imgBgr=origin_img
+        img_removedColors=tryRmAllNonGrayscalePixels(imgBgr)
+
+        gray_image=cv2.cvtColor(img_removedColors, cv2.COLOR_BGR2GRAY)
+        openingImg = getOpeningImg(gray_image)
+        if False:#debug
+            plt.figure(figsize=(10, 5))
+            plt.imshow(openingImg, cmap='grey')
+            #return
+
+        roiInfo=self.getUSimgRectByGradientPhase(openingImg)
+        for icoord in roiInfo:
+            if icoord <0:
+                print(f"Error: {self.m_imgname}:ROI Coordinate Invalid:{roiInfo}")
+                return
+        if False:#debug
+            drawedInmg=self.drawCropRectOnImage(self.m_oriImage, roiInfo)
+            self.showCropedImg(drawedInmg, roiInfo)
+
+        self.saveCropedImg(self.m_oriImage, roiInfo)
+
+
     def cropImageV3(self, origin_img:np.ndarray):
         self.m_oriImage=origin_img.copy()
         imgBgr=origin_img
@@ -264,6 +380,31 @@ def removeAllNonGrayscalePixels(img:np.ndarray):
     #plt.imshow(img)
     return img
 
+def tryRmAllNonGrayscalePixels(imgBgr:np.ndarray):
+    """
+    if the us image is not all grayscale, then ignore this, otherwise all image will be black/blank;
+    """
+    rowCntC=int(imgBgr.shape[0]/2)
+    colCntC=int(imgBgr.shape[1]/2)
+    
+    center9pixels=imgBgr[(rowCntC-1): (rowCntC+2), (colCntC-1):(colCntC+2),:]
+    pixelsNum=(center9pixels.shape[0] * center9pixels.shape[1])
+    #print(f"debug: center9pixels={center9pixels}")
+    center9pixels=center9pixels.reshape(pixelsNum, 3)
+    #print(f"debug: center9pixels={center9pixels}")
+    
+    equalItems=0
+    shouldEqualCnt=center9pixels.shape[0]
+    for irgb in range(shouldEqualCnt):
+        if len(np.unique(center9pixels[irgb,:])) == 1:
+            equalItems+=1
+    if (shouldEqualCnt - equalItems) / shouldEqualCnt > 0.2:
+        print(f"WARNING: pixel not grayscale , cannot remove color pixels.!!!")
+        img_removedColors=imgBgr
+    else:
+        img_removedColors=removeAllNonGrayscalePixels(imgBgr)
+    return img_removedColors
+
 def getOpeningImg(fp:str):
     gray_image = cv2.imread(imgfile, cv2.IMREAD_GRAYSCALE)
     kernel=np.ones((5,5), np.uint8)
@@ -288,6 +429,18 @@ def testOnV3Crop():
     cropimg=CropUsImageClass()
     cropimg.cropImageV3(imageBgr)
 
+def testOnV4Crop():
+    """
+        using resized image get coordinate to reduce compution;
+    """
+    fp = '/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/83CasesFirstImg/thyroidNodules_axp-084_frm-0001.png'
+    imageBgr=cv2.imread(fp)
+    oriShape=imageBgr.shape
+    nshape=( int(oriShape[1]/1), int(oriShape[0]/1)) 
+    resized = cv2.resize(imageBgr, nshape, interpolation=cv2.INTER_LINEAR)
+    cropimg=CropUsImageClass()
+    cropimg.cropImageV4(resized)
+
 if __name__ == "__main__":
     if len(sys.argv)<2:
         print(f"App Image")
@@ -296,7 +449,7 @@ if __name__ == "__main__":
         fp=sys.argv[1]
         imageBgr=cv2.imread(fp)
         cropimg=CropUsImageClass(fp)
-        cropimg.cropImageV3(imageBgr)
+        cropimg.cropImageV4(imageBgr)
 
 # test cli: 
 """
