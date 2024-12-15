@@ -49,9 +49,12 @@ class CropUsImageClass:
             #01-topline and left, right.
             if gtZeroCntTop > rowValThreshold:
                 if topRow<3:
+                    upperRowPixelsVals=gray_image[irow-1,:]
                     thisRowPixelsVals=gray_image[irow,:]
-                    if np.mean(thisRowPixelsVals) > 7:
-                        print(f"debug:row[{irow}]: image mean value is: {np.mean(thisRowPixelsVals)}. mostly a wrong line in header of screenshot. ignore this line.")
+                    upperRowPixelsMean=np.mean(upperRowPixelsVals)
+                    thisRowPixelsMean=np.mean(thisRowPixelsVals)
+                    if upperRowPixelsMean > 7 :
+                        print(f"debug:row[{irow-1}]: image mean value is: {upperRowPixelsMean}. mostly a wrong line in header of screenshot. ignore this line.")
                         continue
                     #print(f"debug:row[{irow}]: has non zero item is: {gtZeroCntTop}, THRESOLD={rowValThreshold}")
                     #print(f"debug:row[{irow}]: image value is: {thisRowPixelsVals}")
