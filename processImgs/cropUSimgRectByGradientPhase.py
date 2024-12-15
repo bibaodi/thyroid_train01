@@ -40,7 +40,8 @@ class CropUsImageClass:
         bottom_one_third=0.66*rowCnt
         rowValThreshold=colCnt*self.m_percentage
         
-        for irow in range(rowCnt):
+        rowStartTopIndex=5 #assume the top 5line not include the header to us-image edge;
+        for irow in range(rowStartTopIndex, rowCnt):
             iRowVals=grad_y[irow, :]
             #print(f"debug:iRowVals={iRowVals}") if irow ==-1 else None
             gtZeroCntTop=np.sum(iRowVals>0)
@@ -49,12 +50,14 @@ class CropUsImageClass:
             #01-topline and left, right.
             if gtZeroCntTop > rowValThreshold:
                 if topRow<3:
+                    upper2RowPixelsVals=gray_image[irow-2,:] #this for trapezoid
                     upperRowPixelsVals=gray_image[irow-1,:]
                     thisRowPixelsVals=gray_image[irow,:]
+                    upper2RowPixelsMean=np.mean(upper2RowPixelsVals)
                     upperRowPixelsMean=np.mean(upperRowPixelsVals)
                     thisRowPixelsMean=np.mean(thisRowPixelsVals)
-                    if upperRowPixelsMean > 7 :
-                        print(f"debug:row[{irow-1}]: image mean value is: {upperRowPixelsMean}. mostly a wrong line in header of screenshot. ignore this line.")
+                    if upperRowPixelsMean > 7 and upper2RowPixelsMean>7:
+                        print(f"debug:row[{irow-1} and {irow-2}]: image mean value is: {upperRowPixelsMean},{upper2RowPixelsVals}. mostly a wrong line in header of screenshot. ignore this line.")
                         continue
                     #print(f"debug:row[{irow}]: has non zero item is: {gtZeroCntTop}, THRESOLD={rowValThreshold}")
                     #print(f"debug:row[{irow}]: image value is: {thisRowPixelsVals}")
@@ -70,7 +73,7 @@ class CropUsImageClass:
                                     topRow=-1
                                     break
                             if setThisAsLeft:
-                                print(f"debug: found xleft in top line={xinRow}")
+                                #print(f"debug: found xleft in top line={xinRow}")
                                 leftCol=xinRow
                                 break
                     for xinRow in range(len(thisRowVal)-1, 0, -1):#right to left
@@ -82,7 +85,7 @@ class CropUsImageClass:
                                     setThisAsRight=False
                                     break
                             if setThisAsRight:
-                                print(f"debug: found rightCol in top line={xinRow}")
+                                #print(f"debug: found rightCol in top line={xinRow}")
                                 rightCol=xinRow
                                 break
             #02-bottom
@@ -98,7 +101,7 @@ class CropUsImageClass:
                     bottomRow=irow
                     
                 
-        print(f"topRow={topRow}, Bottom={bottomRow}")
+        print(f"topRow={topRow}, Bottom={bottomRow}, ", end='')
         print(f"leftCol={leftCol}, rightCol={rightCol}")
 
         return [topRow, bottomRow, leftCol,rightCol]    
@@ -450,6 +453,7 @@ if __name__ == "__main__":
     else:
         #fp = '/media/eton/hdd931g/42-workspace4debian/10-ExtSrcs/ITKPOCUS/itkpocus/tests/data/83CasesFirstImg/thyroidNodules_axp-042_frm-0001.png'
         fp=sys.argv[1]
+        print(f"\n\nProcess:{fp}")
         imageBgr=cv2.imread(fp)
         cropimg=CropUsImageClass(fp)
         cropimg.cropImageV4(imageBgr)
