@@ -7,6 +7,10 @@ import sys
 import pathlib
 from pathlib import Path 
 
+"""
+- eton@241216 finish get crop rectangle and write to lmstart.json.
+
+"""
 
 
 def removeAllNonGrayscalePixels(img:np.ndarray):
@@ -151,7 +155,8 @@ class CropUsImageClass:
         print(f"topRow={topRow}, Bottom={bottomRow}, ", end='')
         print(f"leftCol={leftCol}, rightCol={rightCol}")
 
-        return [topRow, bottomRow, leftCol,rightCol]    
+        # history: [topRow, bottomRow, leftCol,rightCol]    
+        return [(leftCol,topRow), (rightCol,bottomRow)]
 
 
     def getUsImgRectAreaInfo(self, origin_img:np.ndarray):
@@ -164,7 +169,7 @@ class CropUsImageClass:
 
         roiInfo=self.getUSimgRectByGradientPhase(openingImg)
         for icoord in roiInfo:
-            if icoord <0:
+            if icoord[0] <0 or icoord[1] <0:
                 print(f"Error: {self.m_imgname}:ROI Coordinate Invalid:{roiInfo}")
                 return
         if False:#debug
@@ -177,7 +182,9 @@ class CropUsImageClass:
         print(f"debug: cropInfo={cropInfo}, image shape={image.shape}")
         if image.shape[-1]>1:
             image=cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        x_start, x_end, y_start,  y_end = cropInfo
+        topleft, rightBottom = cropInfo
+        x_start, y_start=topleft
+        x_end, y_end = rightBottom
         # Crop the image
         cropped_image = image[x_start:x_end, y_start:y_end]
 
