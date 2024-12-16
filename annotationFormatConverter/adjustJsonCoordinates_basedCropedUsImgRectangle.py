@@ -71,10 +71,45 @@ class AnnotationJsonAdjustor:
         with open(jsonfile, 'w') as jfp:
                 json.dump(jims, jfp)
         return 0
-                
 
+    def getCropedImg(self, image:np.ndarray, cropInfo:list):
+        #print(f"debug: cropInfo={cropInfo}, image shape={image.shape}")
+        if len(image.shape) > 2 and (image.shape[-1]>1):
+            image=cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        topleft, rightBottom = cropInfo
+        x_start, y_start=topleft
+        x_end, y_end = rightBottom
+        # Crop the image
+        cropped_image = image[ y_start:y_end, x_start:x_end]
+
+        return cropped_image
+
+    def processOneImage(self, imagefile:pathlib.Path):
+        if not imagefile.exists():
+            print(f"Error: image file Not Exist:{imagefile}")
+            return -1
+        
+        gray_image = cv2.imread(imagefile, cv2.IMREAD_GRAYSCALE)
+        cropped_image=self.getCropedImg(gray_image, self.m_usimgRect)
+        cv2.imwrite(imagefile, cropped_image)
+        return 0
     
-def processJsonInCases(casesFolder):
+    def processOneDcmFolderJsons(self, dcmfolder:pathlib.Path):
+        allAnnotedJsons=sorted(dcmfolder.glob('frm-*.json'))
+        for oneJson in allAnnotedJsons:
+            self.processOneJson(oneJson)
+
+        return 0
+
+    def processOneDcmFolderImages(self, dcmfolder:pathlib.Path):
+        allImagefiles=sorted(dcmfolder.glob('frm-*.png'))
+        for oneImg in allImagefiles:
+            self.processOneImage(oneImg)
+
+        return 0
+
+
+def process_JsonImage_InCases(casesFolder):
     working_dir=pathlib.Path(casesFolder)
     casefolders = working_dir.iterdir()
     for icase in casefolders:
@@ -90,9 +125,10 @@ def processJsonInCases(casesFolder):
         else:
             print(" read Rect Info success,,,")
 
-        allAnnotedJsons=sorted(dcmfolder.glob('frm-*.json'))
-        for oneJson in allAnnotedJsons:
-            annotJsonAdj.processOneJson(oneJson)
+        annotJsonAdj.processOneDcmFolderJsons(dcmfolder)
+        annotJsonAdj.processOneDcmFolderImages(dcmfolder)
+
+
 
 
 if __name__ == "__main__":
@@ -102,7 +138,7 @@ if __name__ == "__main__":
         #fp = '/media/eton/hdd931g/42-workspace4debian/10-ExtSrcs/ITKPOCUS/itkpocus/tests/data/83CasesFirstImg/thyroidNodules_axp-042_frm-0001.png'
         alldcmfolder=sys.argv[1]
         print(f"\n\nProcess:{alldcmfolder}")
-        processJsonInCases(alldcmfolder)
+        process_JsonImage_InCases(alldcmfolder)
 
 """
 python /mnt/d/000-srcs/210822-thyroid_train/annotationFormatConverter/adjustJsonCoordinates_basedCropedUsImgRectangle.py `pwd`

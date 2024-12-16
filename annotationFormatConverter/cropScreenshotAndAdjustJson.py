@@ -226,6 +226,9 @@ class CropUsImageClass:
 
     def main_processDicomFolder(self, dcmfolder:pathlib):
         imgfiles=[i for i in sorted(dcmfolder.glob('*.png'))]
+        if len(imgfiles) < 1:
+            print(f"{dcmfolder} contains no png!")
+            return -1
         firstImgfile=imgfiles[0]
 
         self.m_imgname = firstImgfile
