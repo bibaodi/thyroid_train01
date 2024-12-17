@@ -89,9 +89,9 @@ class AnnotationJsonAdjustor:
             print(f"Error: image file Not Exist:{imagefile}")
             return -1
         
-        gray_image = cv2.imread(imagefile, cv2.IMREAD_GRAYSCALE)
+        gray_image = cv2.imread(str(imagefile), cv2.IMREAD_GRAYSCALE)
         cropped_image=self.getCropedImg(gray_image, self.m_usimgRect)
-        cv2.imwrite(imagefile, cropped_image)
+        cv2.imwrite(str(imagefile), cropped_image)
         return 0
     
     def processOneDcmFolderJsons(self, dcmfolder:pathlib.Path):
