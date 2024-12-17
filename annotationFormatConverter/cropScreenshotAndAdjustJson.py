@@ -229,8 +229,8 @@ class CropUsImageClass:
         if len(imgfiles) < 1:
             print(f"{dcmfolder} contains no png!")
             return -1
-        firstImgfile=imgfiles[0]
-
+        firstImgfile=str(imgfiles[0])
+        #print(f"debuf: type{type(firstImgfile)}, = {firstImgfile}")
         self.m_imgname = firstImgfile
         imageBgr=cv2.imread(firstImgfile)
 
@@ -263,3 +263,4 @@ if __name__ == "__main__":
 """
 python /mnt/d/000-srcs/210822-thyroid_train/annotationFormatConverter/cropScreenshotAndAdjustJson.py `pwd`
 """
+
