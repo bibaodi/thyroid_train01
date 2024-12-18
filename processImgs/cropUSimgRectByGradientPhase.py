@@ -9,8 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+import pathlib
 from pathlib import Path 
 
+from tqdm import tqdm
 import datetime
 import logging
 
@@ -46,7 +48,7 @@ class CropUsImageClass:
         grad_y = cv2.Scharr(gray_image, outputImgDepth, 0, 1)
         #plt.imshow(grad_y)
         #print(f"debug:image gradient shape={grad_y.shape}")
-        np.savetxt('output-gradY.csv', grad_y, delimiter=',', fmt='%.1f')    
+        #np.savetxt('output-gradY.csv', grad_y, delimiter=',', fmt='%.1f')    
 
         #print(f"debug:iRowVals[ 23]={grad_y[24,:]}")
                
@@ -247,6 +249,16 @@ class CropUsImageClass:
         #self.saveCropedImg(gray_image, roiInfo)
         self.showCropedImg(openingImg, roiInfo)
 
+    def main_processDicomFolder(self, dcmfolder:pathlib):
+        imgfiles=[i for i in sorted(dcmfolder.glob('*.png'))]
+        if len(imgfiles) < 1:
+            print(f"{dcmfolder} contains no png!")
+            return -1
+        for oneimgfile in tqdm(imgfiles, desc="Cropping"):
+            imageBgr=cv2.imread(oneimgfile)
+            self.m_imgname=str(oneimgfile)
+            self.cropImageV4(imageBgr)
+
 def removeAllNonGrayscalePixels(img:np.ndarray):
     # Convert the image to grayscale
     gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -296,17 +308,6 @@ def getOpeningImg(gray_image:np.ndarray):
     openingImg = cv2.morphologyEx(gray_image, cv2.MORPH_OPEN, kernel)
     return openingImg
 
-def test():
-    fp = '/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/83CasesFirstImg/thyroidNodules_axp-012_frm-0001.png'
-    #fp=sys.argv[1]
-    cropimg=CropUsImageClass()
-    cropimg.cropImageV1(fp)
-
-def testOnV3Crop():
-    fp = '/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/83CasesFirstImg/thyroidNodules_axp-014_frm-0001.png'
-    imageBgr=cv2.imread(fp)
-    cropimg=CropUsImageClass()
-    cropimg.cropImageV3(imageBgr)
 
 def testOnV4Crop():
     """
@@ -323,13 +324,16 @@ def testOnV4Crop():
 def main_crop():
     initLogger()
     if len(sys.argv)<2:
-        print(f"App Image")
+        print(f"App ImageFolder")
     else:
-        fp=sys.argv[1]
-        logger.info(f"\n\nProcess:{fp}")
-        imageBgr=cv2.imread(fp)
-        cropimg=CropUsImageClass(fp)
-        cropimg.cropImageV4(imageBgr)
+        imgfolder=pathlib.Path(sys.argv[1])
+        if False == imgfolder.is_dir():
+            print(f"Error: please confirm folder exist[{str(imgfolder)}]!!!")
+            return -1
+        logger.info(f"\n\nProcessing:{imgfolder}...")
+
+        cropimg=CropUsImageClass("")
+        cropimg.main_processDicomFolder(imgfolder)
 
 if __name__ == "__main__":
     __name__="cropUSimgRectByGradientPhase"
