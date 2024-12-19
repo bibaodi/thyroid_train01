@@ -2,6 +2,7 @@
 APP:cropUSimgRectByGradientPhase
 - eton@241215 V1.0 first edition;
 - eton@241218 V1.1 add logging , support folder;
+- eton@241219 V1.2 add python version check for api not compatible (develop in Py3.10, Errors acccur in Py3.6)
 """
 
 import cv2
@@ -26,7 +27,10 @@ def initLogger():
     formatted_date_time = now.strftime("%y%m%dT%H%M%S")
     # Create the log file name
     log_file_name = f"cropUSimgRectByGradientPhase_{formatted_date_time}.log"
-    logging.basicConfig(filename=log_file_name, encoding='utf-8', level=logging.DEBUG)
+    if _ver.minor < 10:
+        logging.basicConfig(filename=log_file_name,  level=logging.DEBUG)
+    else:
+        logging.basicConfig(filename=log_file_name, encoding='utf-8', level=logging.DEBUG)
 
 class CropUsImageClass:
     def __init__(self, imgfile:str):
@@ -80,7 +84,7 @@ class CropUsImageClass:
                     upperRowPixelsMean=np.mean(upperRowPixelsVals)
                     thisRowPixelsMean=np.mean(thisRowPixelsVals)
                     if upperRowPixelsMean > 7 and upper2RowPixelsMean>7:
-                        print(f"debug:row[{irow-1} and {irow-2}]: image mean value is: {upperRowPixelsMean},{upper2RowPixelsVals}. mostly a wrong line in header of screenshot. ignore this line.")
+                        logger.warning(f"debug:row[{irow-1} and {irow-2}]: image mean value is: {upperRowPixelsMean},{upper2RowPixelsVals}. mostly a wrong line in header of screenshot. ignore this line.")
                         continue
                     #print(f"debug:row[{irow}]: has non zero item is: {gtZeroCntTop}, THRESOLD={rowValThreshold}")
                     #print(f"debug:row[{irow}]: image value is: {thisRowPixelsVals}")
@@ -252,11 +256,12 @@ class CropUsImageClass:
     def main_processDicomFolder(self, dcmfolder:pathlib):
         imgfiles=[i for i in sorted(dcmfolder.glob('*.png'))]
         if len(imgfiles) < 1:
-            print(f"{dcmfolder} contains no png!")
+            logger.error(f"{dcmfolder} contains no png!")
             return -1
         for oneimgfile in tqdm(imgfiles, desc="Cropping"):
-            imageBgr=cv2.imread(oneimgfile)
-            self.m_imgname=str(oneimgfile)
+            imgfilestr=str(oneimgfile)
+            imageBgr=cv2.imread(imgfilestr)
+            self.m_imgname=imgfilestr
             self.cropImageV4(imageBgr)
 
 def removeAllNonGrayscalePixels(img:np.ndarray):
@@ -290,7 +295,7 @@ def tryRmAllNonGrayscalePixels(imgBgr:np.ndarray):
         if len(np.unique(center9pixels[irgb,:])) == 1:
             equalItems+=1
     if (shouldEqualCnt - equalItems) / shouldEqualCnt > 0.2:
-        logger.WARNING(f"WARNING: pixel not grayscale , cannot remove color pixels.!!!")
+        logger.warning(f"WARNING: pixel not grayscale , cannot remove color pixels.!!!")
         img_removedColors=imgBgr
     else:
         img_removedColors=removeAllNonGrayscalePixels(imgBgr)
@@ -336,6 +341,9 @@ def main_crop():
         cropimg.main_processDicomFolder(imgfolder)
 
 if __name__ == "__main__":
+    _ver = sys.version_info
+    if _ver.minor < 10:
+        print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
     __name__="cropUSimgRectByGradientPhase"
     main_crop()
     print(f"Done.")
