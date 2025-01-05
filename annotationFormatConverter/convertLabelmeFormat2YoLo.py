@@ -90,7 +90,7 @@ class GetInfoFromExternalSpreadSheetFile:
             corresponding_value = corresponding_value.to_list()
             logger.info(f"debug: The [{targetKeyToMatch}] corresponding value in {outputColName} is: {corresponding_value}")
         else:
-            logger.warning(f"Warning: No match found for the target value: {target_value}")
+            logger.warning(f"Warning: No match found for the target value: {targetKeyToMatch}")
         if  type(corresponding_value) is list and  len(corresponding_value)>0:
             return corresponding_value[0]
         else:
@@ -162,7 +162,7 @@ class ImageOperation:
         try:
             with Image.open(image_path) as img:
                 width, height = img.size
-                logger.info(f"Image size: {width}x{height}")
+                logger.info(f"{image_path} Image size: {width}x{height}")
                 imgsize=(width, height)
                 return imgsize
         except UnidentifiedImageError:
@@ -395,7 +395,7 @@ class LabelmeFormat2YOLOFormat:
         
         for ijsonpath in jsons:
             ret  = self.parseXiaobaoJson(ijsonpath)
-            logger.info(f"debug: ret={ret}")
+            logger.info(f"debug: process [{ijsonpath}], ret={ret}")
             if ret <0:
                 logger.info(f"Err: parse json failed")
             
@@ -430,7 +430,7 @@ def main_entrance():
         if False == imgfolder.is_dir():
             print(f"Error: please confirm folder exist[{str(imgfolder)}]!!!")
             return -1
-        logger.info(f"\n\nProcessing:{imgfolder}...")
+        logger.info(f"Processing:{imgfolder}...")
 
         exlfile=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
