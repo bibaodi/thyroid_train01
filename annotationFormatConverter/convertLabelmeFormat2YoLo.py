@@ -434,9 +434,9 @@ def main_entrance():
 
         exlfile=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
-        outputColName=u'ti_rads'
+        outputColName=u'BETHESDA' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.yolofmt')
+        outputYoloPath=imgfolder.with_suffix('.yolofmtBM')
         fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
         fmtConverter.process_multiPACScases( imgfolder)
 
