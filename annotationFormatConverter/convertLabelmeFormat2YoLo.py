@@ -32,12 +32,31 @@ import re
 ## !pip install xlrd
 
 class GetInfoFromExternalSpreadSheetFile:
-    def __init__(self):
-        pass
+    def __init__(self,excelFile:str, sheetName:str,colName_select:str, outputColName:str):
+        self.excelFile=excelFile
+        self.sheetName=sheetName
+        self.sheet1Dataframe=None
+
+        colName_tirads=outputColName #u'ti_rads' 
+        data = {}
+        with pandas.ExcelFile(excelFile) as xls:
+            data[sheetName] = pandas.read_excel(xls, sheetName, usecols=[colName_tirads, colName_select])
+        
+        self.sheet1Dataframe= data[sheetName]
+
+    @staticmethod
+    def mapBethesda06ToBengNMalign(inclass:int=0):
+        if inclass <=1: #NULL, 0,1->0
+            return 0
+        elif inclass<=2:# 2->Benign
+            return 1
+        else:#3-6->Malignant
+            return 2
     
     @staticmethod
     def convert_leading_digits_to_number(tirads_str:str, default_class:int=0):
         if type(tirads_str) is not str or len(tirads_str)<1:
+            logger.error(f"Err: input tirads_str is not string or empty:{tirads_str}")
             return default_class
             #raise ValueError("Input string is empty")
 
@@ -50,24 +69,17 @@ class GetInfoFromExternalSpreadSheetFile:
                 digits += char
             else:
                 break
-
+        logger.info(f"debug: tirads_str={tirads_str}, digits={digits}")
         # Check if any digits were collected
         if digits:
             return int(digits)
         else:
             return default_class
 
-    @staticmethod
-    def extractAllMatchedFileName(excelFile:str, sheetName:str, colName_select:str, targetKeyToMatch:str, outputColName:str):
-        colName_tirads=outputColName #u'ti_rads'
-        
-        data = {}
-        with pandas.ExcelFile(excelFile) as xls:
-            data[sheetName] = pandas.read_excel(xls, sheetName, usecols=[colName_tirads, colName_select])
-        
-        sheet1Dataframe= data[sheetName]
+    def extractAllMatchedFileName(self, excelFile:str, sheetName:str, colName_select:str, targetKeyToMatch:str, outputColName:str):
+        colName_tirads=outputColName #u'ti_rads' 
+        sheet1Dataframe= self.sheet1Dataframe#data[sheetName]
         #print(type(sheet1Dataframe),sheet1Dataframe.shape,sheet1Dataframe[0:5][:], sheet1Dataframe[colName_select][0:5])
-        eleNum=sheet1Dataframe.shape[0]
 
         if type(targetKeyToMatch) is not str:
             targetKeyToMatch=str(targetKeyToMatch)
@@ -92,18 +104,23 @@ class GetInfoFromExternalSpreadSheetFile:
         else:
             logger.warning(f"Warning: No match found for the target value: {targetKeyToMatch}")
         if  type(corresponding_value) is list and  len(corresponding_value)>0:
-            return corresponding_value[0]
+            if type(corresponding_value[0]) is not str:
+                return str(corresponding_value[0])
+            else:
+                return corresponding_value[0]
         else:
             return '0'
-
-    def testIt(self):
+    
+    @staticmethod
+    def testIt():
         exlfile=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         sheetName="origintable"
         selectColName='access_no'
         matchKey='02.202401010411.01'
         outputColName=u'ti_rads'
 
-        matchedTRs=GetInfoFromExternalSpreadSheetFile.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
+        spreadsheetReader = GetInfoFromExternalSpreadSheetFile(excelFile, sheetName, selectColName, outputColName)
+        matchedTRs=spreadsheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
         matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
         logger.info(f"matchedTR={matchedTRs}, {matchedTRi}")
 
@@ -364,9 +381,12 @@ class LabelmeFormat2YOLOFormat:
             outputColName=self.outputColName
             sheetName=self.sheetName
 
-            matchedTRs=GetInfoFromExternalSpreadSheetFile.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
+            spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+            matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
             matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            shape_yolorect.insert(0, matchedTRi)
+            BenignMalign3Class= GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
+            logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
+            shape_yolorect.insert(0, BenignMalign3Class)
             
             allRects.append(shape_yolorect)
             #print(f"debug: shape_rect={shape_rect}, shape_yolorect={shape_yolorect}")
@@ -436,7 +456,7 @@ def main_entrance():
         selectColName='access_no'
         outputColName=u'BETHESDA' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.yolofmtBM')
+        outputYoloPath=imgfolder.with_suffix('.00yolofmtBM')
         fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
         fmtConverter.process_multiPACScases( imgfolder)
 
