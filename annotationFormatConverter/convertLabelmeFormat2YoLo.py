@@ -32,6 +32,8 @@ import re
 ## !pip install xlrd
 
 class GetInfoFromExternalSpreadSheetFile:
+    static_member4NotMatched=int(9527)
+
     def __init__(self,excelFile:str, sheetName:str,colName_select:str, outputColName:str):
         self.excelFile=excelFile
         self.sheetName=sheetName
@@ -43,6 +45,13 @@ class GetInfoFromExternalSpreadSheetFile:
             data[sheetName] = pandas.read_excel(xls, sheetName, usecols=[colName_tirads, colName_select])
         
         self.sheet1Dataframe= data[sheetName]
+
+    def isMatchedValueVaild(self, matchedValue:int):
+        if  not isinstance(matchedValue, (int, float)):
+            return False
+        if self.static_member4NotMatched == matchedValue:
+            return False
+        return True
 
     @staticmethod
     def mapBethesda06ToBengNMalign(inclass:int=0):
@@ -87,7 +96,7 @@ class GetInfoFromExternalSpreadSheetFile:
         keyCol = sheet1Dataframe[colName_select]
         valCol = sheet1Dataframe[outputColName]
         # Target value to match in ColumnA
-        corresponding_value = '0'
+        corresponding_value = self.static_member4NotMatched
         
         # Find the row where ColumnA matches the target value
         if 0: # match by equal
@@ -109,7 +118,7 @@ class GetInfoFromExternalSpreadSheetFile:
             else:
                 return corresponding_value[0]
         else:
-            return '0'
+            return str(self.static_member4NotMatched)
     
     @staticmethod
     def testIt():
@@ -384,7 +393,10 @@ class LabelmeFormat2YOLOFormat:
             spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
             matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
             matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            BenignMalign3Class= GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
+            if not spreadSheetReader.isMatchedValueVaild(matchedTRi):
+                logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs}")
+                continue
+            BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
             logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
             shape_yolorect.insert(0, BenignMalign3Class)
             
@@ -443,8 +455,8 @@ class LabelmeFormat2YOLOFormat:
 
 def main_entrance():
     initLogger()
-    if len(sys.argv)<2:
-        print(f"App ImageFolder")
+    if len(sys.argv)<3:
+        print(f"App ImageFolder spreadsheetFile.xls")
     else:
         imgfolder=pathlib.Path(sys.argv[1])
         if False == imgfolder.is_dir():
@@ -452,11 +464,11 @@ def main_entrance():
             return -1
         logger.info(f"Processing:{imgfolder}...")
 
-        exlfile=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
+        exlfile= sys.argv[2] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
-        outputColName=u'BETHESDA' 
+        outputColName=u'bom' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.00yolofmtBM')
+        outputYoloPath=imgfolder.with_suffix('.yoloBoM')
         fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
         fmtConverter.process_multiPACScases( imgfolder)
 
