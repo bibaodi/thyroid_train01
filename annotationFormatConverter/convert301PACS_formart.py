@@ -1,6 +1,10 @@
+# file format convert from PACS format to labelme format;
+
 #the files struct as follow
 # eton@241221 update for one case as 3d; oneline is ellipse which take axis from two lines image;
-# eton@241222 make it aviilable from PACS format to labelme foramt;
+# eton@241222 make it available from PACS format to labelme foramt;
+# eton@250112 refine logs and add more comments, bugfix: Path.glob donot support mulitiple wildcard`casepath.glob('*.{jpg,png,jpeg,bmp}') `, use Pathlib instead;
+
 """
 ./02.202401010411.01$ ls -l
 total 208
@@ -17,6 +21,8 @@ import matplotlib.pyplot as plt
 import json
 import os
 import sys
+
+from typing import List
 
 import datetime
 import logging
@@ -40,6 +46,18 @@ def initLogger():
         logging.basicConfig(filename=log_file_name,  level=logging.DEBUG)
     else:
         logging.basicConfig(filename=log_file_name, encoding='utf-8', level=logging.DEBUG)
+
+
+def get_files_with_suffixes(directory: pathlib.Path, suffixes: List[str]) -> List[pathlib.Path]:
+    files = []
+    for suffix in suffixes:
+        files.extend(directory.glob(f'*.{suffix}'))
+    return sorted(files)
+
+def getImageFilesBySuffixes(casepath:pathlib.Path):
+    image_suffixes = ['jpg', 'png', 'jpeg', 'bmp']
+    image_files = get_files_with_suffixes(casepath, image_suffixes)
+    return image_files
 
 # Function to find the intersection of two line segments
 def line_intersection(line1, line2):
@@ -387,7 +405,7 @@ def processOnePACSfolder(casepath:pathlib.Path):
         
     labelmefolderpath=getPath4AfterConverted(casepath)
     
-    imgs=[iimg for iimg in sorted(casepath.glob('*.{jpg,png,jpeg,bmp}'))]
+    imgs=getImageFilesBySuffixes(casepath)
     jsons=[ijson for ijson in sorted(casepath.glob("*.json"))]
 
     if len(jsons) < 1:
@@ -482,7 +500,7 @@ def process_multiPACScases(casesFolder):
     working_dir=pathlib.Path(casesFolder)
     casefolders = working_dir.iterdir()
 
-    for icase in tqdm(casefolders, desc="PACS Format Converting:"):
+    for icase in tqdm(casefolders, desc="PACS_exportedData2Labelmeformat Converting:"):
         icasepath=icase
         caseName=icasepath.name
         if caseName.startswith("301PACS"):
@@ -490,14 +508,14 @@ def process_multiPACScases(casesFolder):
         #if "02.2024" in caseName:
         #    continue
     
-        logger.info(f"\n\n^^^Process:{icasepath}")
+        logger.info(f"^^^Process:{icasepath.name}")
         failed = processOnePACSfolder(icasepath)
 
         if 0 != failed:
-            logger.info(f"\tprocess pacs folder failed!!!")
+            logger.info(f"process pacs folder:[{casefolders.name}] failed!!!")
             break
         else:
-            logger.info(" process pacs folder success,,,")
+            logger.info("process pacs folder success,,,")
 
 
 if __name__ == "__main__":
