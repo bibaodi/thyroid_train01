@@ -5,6 +5,7 @@
 
 import datetime
 import logging
+import time
 
 from tqdm import tqdm
 from multimethod import multimethod
@@ -221,6 +222,8 @@ class LabelmeFormat2YOLOFormat:
         self.sheetName=sheetName
         self.selectColName=selectColName
         self.outputColName=outputColName
+
+        self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
         
     @staticmethod
     def rectFromPixelToYoloFormat_CenterXYWH_inPercent(rectInPos:list, imgWidth:int, imgHeight:int):
@@ -379,7 +382,10 @@ class LabelmeFormat2YOLOFormat:
             if type(debug_this) is not None and debug_this:
                 ImageOperation.showRectInImg(image_file, shape_rect, lbm_pointsInOneShape)
             #03 rectangle to YOLO
+            image_op_start = time.time()
             imgW, imgH = ImageOperation.getImageSizeWithoutReadWholeContents(image_file)
+            image_op_end = time.time()
+            logging.info(f"performance: Image operation took {image_op_end - image_op_start:.4f} seconds")
             shape_yolorect=LabelmeFormat2YOLOFormat.rectFromPixelToYoloFormat_CenterXYWH_inPercent(shape_rect, imgW, imgH)
             #03.2-add class to label
             matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
@@ -390,8 +396,11 @@ class LabelmeFormat2YOLOFormat:
             outputColName=self.outputColName
             sheetName=self.sheetName
 
-            spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+            spreadsheet_op_start = time.time()
+            spreadSheetReader = self.spreadSheetReader #GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
             matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
+            spreadsheet_op_end = time.time()
+            logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
             matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
             if not spreadSheetReader.isMatchedValueVaild(matchedTRi):
                 logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs}")
@@ -437,20 +446,19 @@ class LabelmeFormat2YOLOFormat:
         working_dir=pathlib.Path(casesFolder)
         casefolders = working_dir.iterdir()
 
-        for icase in tqdm(casefolders, desc="PACS Format Converting2YOLO:"):
+        for icase in tqdm(casefolders, desc="PACS LabelmeFormat Converting2YOLO:"):
             icasepath=icase
             caseName=icasepath.name
             if caseName.startswith("YOLO"):
                 continue
-            logger.info(f"\n\n^^^Process:{icasepath}")
+            logger.info(f"^^^Process:{icasepath}")
             failed = self.processOnePACSfolder(icasepath)
 
             if 0 != failed:
-                logger.info(f"\tprocess pacs folder failed!!!")
+                logger.error(f"process pacs folder failed!!!")
                 break
             else:
-                logger.info(" process pacs folder success,,,")
-
+                logger.info("process pacs folder success,,,")
 
 
 def main_entrance():
@@ -466,11 +474,11 @@ def main_entrance():
 
         exlfile= sys.argv[2] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
-        outputColName=u'bom' 
+        outputColName=u'ti_rads'#u'bom' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.yoloBoM')
+        outputYoloPath=imgfolder.with_suffix('.yoloTIRADS')
         fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
-        fmtConverter.process_multiPACScases( imgfolder)
+        fmtConverter.process_multiPACScases(imgfolder)
 
 def test_it():
     rootFolder=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat'
