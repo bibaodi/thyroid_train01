@@ -509,11 +509,11 @@ def process_multiPACScases(casesFolder):
         #if "02.2024" in caseName:
         #    continue
     
-        logger.info(f"^^^Process:{icasepath.name}")
+        logger.info(f"^^^Process:{icase.name}")
         failed = processOnePACSfolder(icasepath)
 
         if 0 != failed:
-            logger.info(f"process pacs folder:[{casefolders.name}] failed!!!")
+            logger.info(f"process pacs folder:[{icase.name}] failed!!!")
             break
         else:
             logger.info("process pacs folder success,,,")
