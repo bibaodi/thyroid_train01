@@ -215,6 +215,7 @@ class Converter_301PACS:
             newJsonPath.unlink()
         with open(newJsonPath, 'w') as jfp:
             json.dump(target_json, jfp)
+        #logger.info(f"write case json and iamge success:{newJsonPath}")
         return 0
 
 class CaseInfoStruct:
@@ -400,7 +401,7 @@ def processOneLineAndALength(img:np.ndarray, point1:tuple, point2:tuple, another
 @multimethod
 def processOnePACSfolder(casepath:pathlib.Path):
     if  not casepath.is_dir():
-        logger.info(f"not exist dir:{casepath}")
+        logger.error(f"not exist dir:{casepath}")
         return -1
         
     labelmefolderpath=getPath4AfterConverted(casepath)
@@ -409,13 +410,13 @@ def processOnePACSfolder(casepath:pathlib.Path):
     jsons=[ijson for ijson in sorted(casepath.glob("*.json"))]
 
     if len(jsons) < 1:
-        logger.info("Err: json file not found in casefolder:{casepath}")
+        logger.error("Err: json file not found in casefolder:{casepath}")
         return -1
     jsonpath = jsons[0]
     ret, measInfo = parseJsonInPACSfolder(jsonpath, imgs)
     logger.info(f"debug: ret={ret}, meas={measInfo}")
     if ret <0:
-        logger.info(f"Err: parse json failed")
+        logger.error(f"Err: parse json failed")
         return -1
     allimgMeasPairs=measInfo
     
@@ -426,7 +427,7 @@ def processOnePACSfolder(casepath:pathlib.Path):
         measItem =  imgMeasPair[1]
         oneLineVertical = True
         if  type(measItem) is not list:
-            logger.info(f"Err:Num{imgIdx} meas points type Not list.")
+            logger.error(f"Err:Num{imgIdx} meas points type Not list.")
             continue
         NofPoints = len(measItem)
         if 2 == NofPoints:
@@ -459,17 +460,16 @@ def processOnePACSfolder(casepath:pathlib.Path):
         bindImgPath = imgMeasPair[0]
         measItem =  imgMeasPair[1]
         if  type(measItem) is not list:
-            logger.info(f"Err:Num{imgIdx} meas points type Not list.")
+            logger.error(f"Err:Num{imgIdx} meas points type Not list.")
             continue
         NofPoints = len(measItem)
     
-        
         img=cv2.imread(bindImgPath)
         drawedImg = None
 
         if 2 == NofPoints:
             if axisLenForOneLine is None:
-                logger.info(f"canot found another length for this only one line image!!! ignore this.")
+                logger.error(f"canot found another length for this only one line image!!! ignore this.")
                 continue
             pt1 = measItem[0]
             pt2 = measItem[1]
@@ -487,6 +487,7 @@ def processOnePACSfolder(casepath:pathlib.Path):
         if False and drawedImg is not None:
             cvter.applyImageResult2fileOrVisual(drawedImg, True)
         cvter.saveConvertedPairToFile(bindImgPath, shapePolygon, labelmefolderpath)
+    
 
     return 0
     
