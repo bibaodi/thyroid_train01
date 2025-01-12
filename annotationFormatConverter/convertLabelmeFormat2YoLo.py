@@ -501,3 +501,5 @@ if __name__ == "__main__":
         print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
     main_entrance()
     print(f"Done.")
+
+#250112 run $ python annotationFormatConverter/convertLabelmeFormat2YoLo.py /mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat /mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/301PACS_database_v241229.xlsx
