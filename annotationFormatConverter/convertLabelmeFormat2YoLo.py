@@ -113,6 +113,7 @@ class GetInfoFromExternalSpreadSheetFile:
             logger.info(f"debug: The [{targetKeyToMatch}] corresponding value in {outputColName} is: {corresponding_value}")
         else:
             logger.warning(f"Warning: No match found for the target value: {targetKeyToMatch}")
+        
         if  type(corresponding_value) is list and  len(corresponding_value)>0:
             if type(corresponding_value[0]) is not str:
                 return str(corresponding_value[0])
@@ -402,8 +403,8 @@ class LabelmeFormat2YOLOFormat:
             spreadsheet_op_end = time.time()
             logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
             matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            if not spreadSheetReader.isMatchedValueVaild(matchedTRi):
-                logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs}")
+            if not spreadSheetReader.isMatchedValueVaild(matchedTRi) or matchedTRi <1:
+                logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs},remove TI0")
                 continue
             BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
             logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
@@ -476,7 +477,7 @@ def main_entrance():
         selectColName='access_no'
         outputColName=u'ti_rads'#u'bom' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.yoloTIRADS')
+        outputYoloPath=imgfolder.with_suffix('.yoloTiRads6')
         fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
         fmtConverter.process_multiPACScases(imgfolder)
 
@@ -503,3 +504,6 @@ if __name__ == "__main__":
     print(f"Done.")
 
 #250112 run $ python annotationFormatConverter/convertLabelmeFormat2YoLo.py /mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat /mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/301PACS_database_v241229.xlsx
+#250113 run $ python annotationFormatConverter/convertLabelmeFormat2YoLo.py \
+# /mnt/f/241129-zhipu-thyroid-datas/17--labelmeFormatOrganized/301pacsDataInLbmfmtRangeY22-24 \
+# /mnt/f/241129-zhipu-thyroid-datas/17--labelmeFormatOrganized/301pacsDataInLbmfmtRangeY22-24/301PACS_database_RangeY22-24_V250113.xlsx
