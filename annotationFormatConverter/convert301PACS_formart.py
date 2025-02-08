@@ -226,17 +226,17 @@ class CaseInfoStruct:
 def getPath4AfterConverted(casepath:pathlib.Path):
     pathParent = casepath.parent
     caseName=casepath.name
-    substring=".20" ##02.202410281498.01
+    substring=".20" ##02.202410281498.01-->301PACS02-2410281498.01
     if substring in caseName:
         caseName=caseName.replace(substring, "-")
 
-    substring=".000000" ##22.0000001629044
+    substring=".000000" ##22.0000001629044-->301PACS22-1629044
     if substring in caseName:
         caseName=caseName.replace(substring, "-")
     caseName=f"301PACS{caseName}"
-    labelmeFmtfoler=pathParent.joinpath(caseName)
+    labelmeFmtfolder=pathParent.joinpath(caseName)
 
-    return labelmeFmtfoler
+    return labelmeFmtfolder
 
 
 @multimethod

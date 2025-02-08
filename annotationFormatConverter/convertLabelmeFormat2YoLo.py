@@ -403,9 +403,9 @@ class LabelmeFormat2YOLOFormat:
             spreadsheet_op_end = time.time()
             logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
             matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            if not spreadSheetReader.isMatchedValueVaild(matchedTRi) or matchedTRi <1:
-                logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs},remove TI0")
-                continue
+            #if not spreadSheetReader.isMatchedValueVaild(matchedTRi) or matchedTRi <1:
+            #    logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs},remove TI0")
+            #    continue
             BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
             logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
             shape_yolorect.insert(0, BenignMalign3Class)
@@ -475,9 +475,9 @@ def main_entrance():
 
         exlfile= sys.argv[2] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
-        outputColName=u'ti_rads'#u'bom' 
+        outputColName=u'bom' #'ti_rads'#u'bom' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.yoloTiRads6')
+        outputYoloPath=imgfolder.with_suffix('.yoloBoM')
         fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
         fmtConverter.process_multiPACScases(imgfolder)
 
