@@ -233,8 +233,31 @@ class ClassificationDatasetGenerator:
         self.sheetName=sheetName
         self.selectColName=selectColName
         self.outputColName=outputColName
-
         self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+        self.cls_benignName='benign'
+        self.cls_malignName='malign'
+        self.cls_othersName='others'
+        self.all_classes=[self.cls_benignName, self.cls_malignName, self.cls_othersName]
+
+    def classIdToName(self, classId:int):
+        if classId == 0:    # benign
+            return self.cls_benignName
+        elif classId == 1:  # malign
+            return self.cls_malignName
+        else:
+            return self.cls_othersName
+
+    def getOutputPathByClassName(self, className:str):
+        if type(className) is not str:
+            className=str(className)
+        classPath=self.outputYoloPath.joinpath(className)
+
+        if not classPath.is_dir():
+            classPath.mkdir(mode=0o666, parents=True, exist_ok=True)
+            logger.info(f"debug: create not exist folder:[{classPath}]") 
+        return classPath
+
+
         
     @staticmethod
     def rectFromPixelToYoloFormat_CenterXYWH_inPercent(rectInPos:list, imgWidth:int, imgHeight:int):
@@ -357,6 +380,24 @@ class ClassificationDatasetGenerator:
         logger.info(f"debug: end of file create {newImagePath}")
         return 0
 
+    def saveClassifiedImageRegionToTargetPath(self, outputYoloPath:pathlib.Path, inImgPath:pathlib.Path, imgRegion:numpy.ndarray, BenignMalign3Class:int):
+        class_name=self.classIdToName(BenignMalign3Class)
+        imgSavePathHome=self.getOutputPathByClassName(class_name)
+
+        imgBaseName=inImgPath.base_name
+        imgSavePath=imgSavePathHome.joinpath(imgBaseName)
+
+        if imgSavePath.is_file():
+            imgfileStem=imgSavePath.stem
+            imgfileSuffix=imgSavePath.suffix
+            imgSavePath=imgSavePathHome.joinpath(imgfileStem+'_1'+imgfileSuffix)
+            logger.info(f"debug: image file already exist:{imgSavePath}")
+
+        cv2.imwrite(str(imgSavePath), imgRegion)
+        logger.info(f"debug: save image to {imgSavePath}")
+
+        return 0
+
     def parseXiaobaoJson(self, json_file:pathlib.Path, leastPointCount:int=4):
         """
             1. deal with one xiaobai's json;
@@ -403,35 +444,35 @@ class ClassificationDatasetGenerator:
         allRects=[]
         if lbm_shapes is None:
             return 2005
+        
+        # 03-read the image which used for get Nodule region
+        full_imageData = cv2.imread(str(image_file))
+        if full_imageData is None:
+            logger.error(f"Err: image file not found.[{image_file}]")
+            return -6
 
+        # 04-iterate all shapes in json
         for ishape, lbm_shapeItem in enumerate(lbm_shapes):
             lbm_pointsInOneShape=lbm_shapeItem["points"]
             lbm_classInOneShape=lbm_shapeItem["label"]
             pointCntInShape=len(lbm_pointsInOneShape)
             #print(f"\t{json_file} shape[{ishape}] has point in shape is: {pointCntInShape}.")
             if pointCntInShape < leastPointCount:
-                logger.error(f"\tErr:{json_file}_shape[{ishape}] has point in shape less then {leastPointCount}>{pointCntInShape}.")
-                return -1
+                logger.error(f"Err:{json_file}_shape[{ishape}] has point in shape less then {leastPointCount}>{pointCntInShape}.")
+                continue #return -1
             #print(f"polygon[{lbm_classInOneShape}] is:{lbm_pointsInOneShape}")
 
-            #01 polygon to rectangle;
+            # polygon to rectangle;
             shape_rect = ClassificationDatasetGenerator.polygonToRectangle(lbm_pointsInOneShape)
-            if not ClassificationDatasetGenerator.checkRectangleIsValid(shape_rect, imgW, imgH):
+            if False ==  ClassificationDatasetGenerator.checkRectangleIsValid(shape_rect, imgW, imgH):
                 logger.error(f"Err: invalid rectangle:{shape_rect}")
                 continue
-            #02 show in image
-            debug_this=False
-            if type(debug_this) is not None and debug_this:
-                ImageOperation.showRectInImg(image_file, shape_rect, lbm_pointsInOneShape)
-            #03 rectangle to YOLO
-            image_op_start = time.time()
-            
-            image_op_end = time.time()
-            logging.info(f"performance: Image operation took {image_op_end - image_op_start:.4f} seconds")
-            shape_yolorect=ClassificationDatasetGenerator.rectFromPixelToYoloFormat_CenterXYWH_inPercent(shape_rect, imgW, imgH)
-            #03.2-add class to label
-            matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
 
+            #05-get the thyroid nodule region
+            nodule_img = full_imageData[shape_rect[1]:shape_rect[3], shape_rect[0]:shape_rect[2]]
+
+            #06-get the case info from excel file
+            matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
             outputYoloFolder=self.outputYoloPath
             exlfile=self.exlfile
             selectColName=self.selectColName
@@ -443,21 +484,13 @@ class ClassificationDatasetGenerator:
             matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
             spreadsheet_op_end = time.time()
             logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
-            matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            #if not spreadSheetReader.isMatchedValueVaild(matchedTRi) or matchedTRi <1:
-            #    logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs},remove TI0")
-            #    continue
-            BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
-            logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
-            shape_yolorect.insert(0, BenignMalign3Class)
-            
-            allRects.append(shape_yolorect)
+            BenignMalign3Class=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
+            logger.info(f"matchedTRs={matchedTRs}, matchedTRi={BenignMalign3Class}, BenignMalign3Class={BenignMalign3Class}") 
             #print(f"debug: shape_rect={shape_rect}, shape_yolorect={shape_yolorect}")
 
-            #04 save image and Yolo.txt to new folder
-        if len(allRects)>0:
-            ClassificationDatasetGenerator.saveImageAndLabelsToTargetPath(outputYoloFolder, image_file, allRects)
-                    
+            #07 save image and Yolo.txt to new folder
+            if BenignMalign3Class != self.spreadSheetReader.static_member4NotMatched:
+                self.saveClassifiedImageRegionToTargetPath(outputYoloFolder, image_file, nodule_img, BenignMalign3Class)
         return 0
 
     def processOnePACSfolder(self, casepath:pathlib.Path):
