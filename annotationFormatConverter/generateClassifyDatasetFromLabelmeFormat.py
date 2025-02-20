@@ -543,9 +543,8 @@ def test_it():
 
 
 if __name__ == "__main__":
-    test_it()
-    sys.exit()  # Add exit to avoid the following code to be executed during testing.
-
+    #test_it()
+    #sys.exit()  # Add exit to avoid the following code to be executed during testing.
     _ver = sys.version_info
     if _ver.minor < 10:
         print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
