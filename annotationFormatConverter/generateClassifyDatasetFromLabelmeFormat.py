@@ -202,6 +202,7 @@ class ImageOperation:
         cv2.polylines(img, [polygonPts4cv], isClosed=True, color=polygonColor, thickness=1)
         plt.imshow(img)
 
+
 class ClassificationDatasetGenerator:
     def __init__(self, outputYoloPath: pathlib.Path, exlfile: pathlib.Path, sheetName: str, selectColName: str, outputColName: str):
         self.outputYoloPath = outputYoloPath
@@ -371,6 +372,30 @@ class ClassificationDatasetGenerator:
 
         return 0
 
+    def getTargetRegionFromImgContent(self, imgContent: np.ndarray, regionRect:list, extendPercent:float=1.0):
+        """
+        get the sub-image rectangle from a full image , the rectangle will be extend by a factor;
+        input:
+            - imgContent: origin full image;
+            - region rect: target rectangle ;
+            - extendPercent: the factor which will be used;
+        output:
+            - the target rectangle after apply the extend factor described sub-image;
+        """
+        imgRows, imgColumns = imgContent.shape[0:2]
+        x_min, y_min, x_max, y_max=regionRect
+        deltaX = max((x_max-x_min), 0) * extendPercent*0.5
+        deltaY = max((y_max-y_min), 0) * extendPercent*0.5
+
+        x_min = max((x_min - deltaX), 0)
+        x_max = min((x_max + deltaX), imgColumns -1)
+        y_min = max((y_min - deltaY), 0)
+        y_max = min((y_max+deltaY), imgRows -1)
+
+        sub_img = imgContent[y_min: y_max, x_min: x_max]
+
+        return sub_img
+
     def parseXiaobaoJson(self, json_file: pathlib.Path, leastPointCount: int = 4):
         """
             1. deal with one xiaobai's json;
@@ -437,7 +462,7 @@ class ClassificationDatasetGenerator:
                 continue
 
             #05-get the thyroid nodule region
-            nodule_img = full_imageData[shape_rect[1]:shape_rect[3], shape_rect[0]:shape_rect[2]]
+            nodule_img = self.getTargetRegionFromImgContent(full_imageData, shape_rect, 2.0) # full_imageData[shape_rect[1]:shape_rect[3], shape_rect[0]:shape_rect[2]]
 
             #06-get the case info from excel file
             matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
