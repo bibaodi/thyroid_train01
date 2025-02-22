@@ -387,10 +387,10 @@ class ClassificationDatasetGenerator:
         deltaX = max((x_max-x_min), 0) * extendPercent*0.5
         deltaY = max((y_max-y_min), 0) * extendPercent*0.5
 
-        x_min = max((x_min - deltaX), 0)
-        x_max = min((x_max + deltaX), imgColumns -1)
-        y_min = max((y_min - deltaY), 0)
-        y_max = min((y_max+deltaY), imgRows -1)
+        x_min = int(max((x_min - deltaX), 0))
+        x_max = int(min((x_max + deltaX), imgColumns -1))
+        y_min = int(max((y_min - deltaY), 0))
+        y_max = int(min((y_max+deltaY), imgRows -1))
 
         sub_img = imgContent[y_min: y_max, x_min: x_max]
 
