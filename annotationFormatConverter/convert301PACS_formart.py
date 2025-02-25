@@ -12,6 +12,7 @@ total 208
 -rwxrwxrwx 1 bibao bibao 102899 Dec 10 11:58 02.202401010411.01.20173.0002.14275200432_crop.jpg
 -rwxrwxrwx 1 bibao bibao    741 Dec 13 09:34 02.202401010411.01_pre.json
 """
+from enum import Enum
 import pathlib
 import shutil
 import math    
@@ -275,65 +276,177 @@ def islineInVertical(measLine):
 
     return oneLineVertical
 
+from enum import Flag
+class AnnoFormatVersion(Flag):
+    """
+    Enum class to represent the format version of the JSON data.
+    """
+    V1 = 1  # Original list-based format
+    V2 = 2  # New dict-based format with horizontal/vertical keys
+    UNKNOWN = 99920250225  # Unknown format
 
-def parseJsonInPACSfolder(jsonPath:pathlib.Path, imagefileslist:list):
+class JsonParserFor301PX:
     """
     parse the json file in case folder, assume there is only one json, which include all images and measures information;
     input: json path
     output: tupe(return code, parsed info)
-    
-    - eton@241222;
+
+    Version 01: [{
+        "name": "02.202201030327.02.20200.0006.11005700392_crop.jpg",
+        "points": [{
+                "x": 235,    "y": 84
+            },{
+                "x": 305,   "y": 89
+            }]}]
+    Version 02: {"area": {
+        "height": 656,
+        "left": 570,
+        "top": 190,
+        "width": 626
+    },"horizontal": {
+        "distance": 0,
+        "x1": 235,
+        "x2": 305,
+        "y1": 84,
+        "y2": 89
+    },"pixel-per-cm": 0,"runler-length": 0,"width": 1920,"height": 1080 }
+    - eton@241225 create this class for support multiple json format from Daniel for 301 PACS;
     """
-    if not jsonPath.is_file():
-        logger.info(f"Error: json file[{jsonPath}] not exist.")
+       
+    def __init__(self, jsonPath:pathlib.Path, imagefileslist:list):
+        """
+        do basic check for input json file;
+        find the verison then parse the json file;
+        """
+        self.m_jsonPath=jsonPath
+        self.m_imagefileslist=imagefileslist
+        self.m_formattVer=AnnoFormatVersion.UNKNOWN
+        self.m_result={0, "OK"}
+
+        if self.isJsonfileValid():
+            self.m_formattVer = self.getDataFormatVersion()
+
+    def parseIt(self):
+        return self.__call__()
+    def __call__(self):
+        if self.isFormatV1():
+           self.m_result= self.parseJsonInPACSfolderV1(self.m_jsonPath, self.m_imagefileslist)
+        elif self.isFormatV2():
+           self.m_result= self.parseJsonInPACSfolderV2(self.m_jsonPath, self.m_imagefileslist)
+        else:
+           logger.info(f"Err: json file[{self.m_jsonPath}] format is not supported.")
+           self.m_result=(-1, None)
+
+        return self.m_result
+
+    def isJsonfileValid(self):
+        jsonfile = self.m_jsonPath
+        if not jsonfile:
+            logger.info(f"Err: json file[{self.m_jsonPath}] not exist.")
+            return False
+        try:
+            with open(jsonfile, 'r') as fp:
+                _=json.load(fp)
+                return True
+        except Exception as e:
+            logger.error(f"File read error: {str(e)}")
+            return False
+    def getDataFormatVersion(self):
+        """
+        Check the version of the JSON data."
+        """
+        jsonfile = self.m_jsonPath
+        try:
+            with open(jsonfile, 'r') as fp:
+                jsobj = json.load(fp)
+                if isinstance(jsobj, list) and all("name" in item and "points" in item for item in jsobj):
+                    return AnnoFormatVersion.V1
+                elif isinstance(jsobj, dict) and "horizontal" in jsobj and "vertical" in jsobj:
+                    return AnnoFormatVersion.V2
+                else:
+                    return AnnoFormatVersion.UNKNOWN
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing failed: {str(e)}")
+        except Exception as e:
+            logger.error(f"File read error: {str(e)}")
+        return AnnoFormatVersion.UNKNOWN
+    
+
+    def isFormatV1(self):
+        """Check if JSON matches V1 format structure"""
+        return self.m_formattVer == AnnoFormatVersion.V1
+
+    def isFormatV2(self):
+        """Check if JSON matches V2 format structure"""
+        return self.m_formattVer == AnnoFormatVersion.V2
+
+    def parseJsonInPACSfolderV1(self, jsonPath:pathlib.Path, imagefileslist:list):
+        """
+        parse the json file in case folder, assume there is only one json, which include all images and measures information;
+        input: json path
+        output: tupe(return code, parsed info)
+        - eton@241222;
+        """
+        if not jsonPath.is_file():
+            logger.info(f"Error: json file[{jsonPath}] not exist.")
+            return (-1, None)
+        
+        with open(jsonPath, 'r') as fp:
+            jsobj=json.load(fp)
+
+        itemCntInJson=len(jsobj)
+        imgsCnt=len(imagefileslist)
+        if itemCntInJson != imgsCnt:
+            logger.info(f"WARNING: json has {itemCntInJson} items, but images count is {imgsCnt}.!!!")
+        
+        twoIntersectionLines=[]
+        oneLineSegments=[]
+        allimgMeasPairs=[]  # parse json from files;
+        for iitem in jsobj: ##01- get info from origin files;
+            #logger.info(f"iitem={iitem}")
+            bindImgName=iitem["name"]
+            measurePoints=iitem["points"]
+            logger.info(f"debug: bindImgName={bindImgName} ,  measurePoints={measurePoints}")
+            pointTupleList=[]
+            for measPt in measurePoints:
+                pointTupleList.append((measPt['x'], measPt['y']))
+            bindImgPath=jsonPath.parent.joinpath(bindImgName)
+            imgMeasPair = None
+
+            if 2 == len(pointTupleList):
+                point1=pointTupleList[-1]
+                point2=pointTupleList[-2]
+                oneLineSegments=[point1, point2]
+                imgMeasPair=(bindImgPath, oneLineSegments)
+            elif 4 == len(pointTupleList):
+                twolines=[]
+                for idx in range(0, 4, 2):
+                    point1=pointTupleList[idx]
+                    point2=pointTupleList[idx+1]
+                    twolines.append(point1)
+                    twolines.append(point2)
+
+                line1=twolines[0:2]
+                line2=twolines[2:]
+                twoIntersectionLines=[line1, line2]
+                #imgMeasPair=(bindImgPath, twoIntersectionLines) # lineSegment as item unit
+                #make all item is points
+                imgMeasPair=(bindImgPath, twolines)  # points as item unit
+                
+            if type(imgMeasPair) is tuple:
+                allimgMeasPairs.append(imgMeasPair)
+        return [0, allimgMeasPairs]
+
+
+    def parseJsonInPACSfolderV2(self, jsonPath:pathlib.Path, imagefileslist:list):
+        """
+        parse the json file in case folder, assume there is only one json, which include all images and measures information;
+        input: json path
+        output: tupe(return code, parsed info)
+        - eton@241222;
+        """
+        logger.info(f"Error: not support yet.")
         return (-1, None)
-    
-    with open(jsonPath, 'r') as fp:
-        jsobj=json.load(fp)
-
-    itemCntInJson=len(jsobj)
-    imgsCnt=len(imagefileslist)
-    if itemCntInJson != imgsCnt:
-        logger.info(f"WARNING: json has {itemCntInJson} items, but images count is {imgsCnt}.!!!")
-    
-    curCaseMeasType=0 #one image has a area defined by two intersection lines and one image has one line segment in 3rd dimension;
-    twoIntersectionLines=[]
-    oneLineSegments=[]
-    allimgMeasPairs=[]  # parse json from files;
-    for iitem in jsobj: ##01- get info from origin files;
-        #logger.info(f"iitem={iitem}")
-        bindImgName=iitem["name"]
-        measurePoints=iitem["points"]
-        logger.info(f"debug: bindImgName={bindImgName} ,  measurePoints={measurePoints}")
-        pointTupleList=[]
-        for measPt in measurePoints:
-            pointTupleList.append((measPt['x'], measPt['y']))
-        bindImgPath=jsonPath.parent.joinpath(bindImgName)
-        imgMeasPair = None
-
-        if 2 == len(pointTupleList):
-            point1=pointTupleList[-1]
-            point2=pointTupleList[-2]
-            oneLineSegments=[point1, point2]
-            imgMeasPair=(bindImgPath, oneLineSegments)
-        elif 4 == len(pointTupleList):
-            twolines=[]
-            for idx in range(0, 4, 2):
-                point1=pointTupleList[idx]
-                point2=pointTupleList[idx+1]
-                twolines.append(point1)
-                twolines.append(point2)
-
-            line1=twolines[0:2]
-            line2=twolines[2:]
-            twoIntersectionLines=[line1, line2]
-            #imgMeasPair=(bindImgPath, twoIntersectionLines) # lineSegment as item unit
-            #make all item is points
-            imgMeasPair=(bindImgPath, twolines)  # points as item unit
-            
-        if type(imgMeasPair) is tuple:
-            allimgMeasPairs.append(imgMeasPair)
-    return [0, allimgMeasPairs]
 
 def find_pointsOnOrthogonalLineByDistance(point1, point2, outLen:float):
     """
@@ -413,7 +526,9 @@ def processOnePACSfolder(casepath:pathlib.Path):
         logger.error("Err: json file not found in casefolder:{casepath}")
         return -1
     jsonpath = jsons[0]
-    ret, measInfo = parseJsonInPACSfolder(jsonpath, imgs)
+    jsonParser=JsonParserFor301PX(jsonpath, imgs)
+    
+    ret, measInfo = jsonParser()
     logger.info(f"debug: ret={ret}, meas={measInfo}")
     if ret <0:
         logger.error(f"Err: parse json failed")
