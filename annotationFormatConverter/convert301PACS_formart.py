@@ -322,6 +322,7 @@ class JsonParserFor301PX:
         self.m_imagefileslist=imagefileslist
         self.m_formattVer=AnnoFormatVersion.UNKNOWN
         self.m_result={0, "OK"}
+        self.m_jsonObj=None
 
         if self.isJsonfileValid():
             self.m_formattVer = self.getDataFormatVersion()
@@ -346,7 +347,7 @@ class JsonParserFor301PX:
             return False
         try:
             with open(jsonfile, 'r') as fp:
-                _=json.load(fp)
+                self.m_jsonObj=json.load(fp)
                 return True
         except Exception as e:
             logger.error(f"File read error: {str(e)}")
@@ -357,14 +358,18 @@ class JsonParserFor301PX:
         """
         jsonfile = self.m_jsonPath
         try:
-            with open(jsonfile, 'r') as fp:
-                jsobj = json.load(fp)
-                if isinstance(jsobj, list) and all("name" in item and "points" in item for item in jsobj):
-                    return AnnoFormatVersion.V1
-                elif isinstance(jsobj, dict) and "horizontal" in jsobj and "vertical" in jsobj:
-                    return AnnoFormatVersion.V2
-                else:
-                    return AnnoFormatVersion.UNKNOWN
+            if self.m_jsonObj is None:
+                with open(jsonfile, 'r') as fp:
+                    jsobj = json.load(fp)
+            else:
+                jsobj=self.m_jsonObj
+
+            if isinstance(jsobj, list) and all("name" in item and "points" in item for item in jsobj):
+                return AnnoFormatVersion.V1
+            elif isinstance(jsobj, dict) and "horizontal" in jsobj and "vertical" in jsobj:
+                return AnnoFormatVersion.V2
+            else:
+                return AnnoFormatVersion.UNKNOWN
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing failed: {str(e)}")
         except Exception as e:
@@ -391,8 +396,11 @@ class JsonParserFor301PX:
             logger.info(f"Error: json file[{jsonPath}] not exist.")
             return (-1, None)
         
-        with open(jsonPath, 'r') as fp:
-            jsobj=json.load(fp)
+        if self.m_jsonObj is None:
+            with open(jsonPath, 'r') as fp:
+                jsobj = json.load(fp)
+        else:
+            jsobj=self.m_jsonObj
 
         itemCntInJson=len(jsobj)
         imgsCnt=len(imagefileslist)
@@ -513,6 +521,8 @@ def processOneLineAndALength(img:np.ndarray, point1:tuple, point2:tuple, another
 
 @multimethod
 def processOnePACSfolder(casepath:pathlib.Path):
+    if isinstance(casepath, str):
+        casepath=pathlib.Path(casepath)
     if  not casepath.is_dir():
         logger.error(f"not exist dir:{casepath}")
         return -1
@@ -606,11 +616,6 @@ def processOnePACSfolder(casepath:pathlib.Path):
 
     return 0
     
-@multimethod
-def processOnePACSfolder(casepath:str):
-    casepath=pathlib.Path(casefolder)
-    return processOnePACSfolder(casepath)
-
 
 def process_multiPACScases(casesFolder):
     working_dir=pathlib.Path(casesFolder)
@@ -628,7 +633,7 @@ def process_multiPACScases(casesFolder):
         failed = processOnePACSfolder(icasepath)
 
         if 0 != failed:
-            logger.info(f"process pacs folder:[{icase.name}] failed!!!")
+            logger.error(f"process pacs folder:[{icase.name}] failed!!!")
             break
         else:
             logger.info("process pacs folder success,,,")
