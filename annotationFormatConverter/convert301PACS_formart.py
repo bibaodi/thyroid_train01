@@ -40,7 +40,7 @@ def initLogger():
     # Format the date and time as a string
     formatted_date_time = now.strftime("%y%m%dT%H%M%S")
     # Create the log file name
-    log_file_name = f"convert301PACS_2labelme_formart_{formatted_date_time}.log"
+    log_file_name = f"convert301PACS_2labelme_format_{formatted_date_time}.log"
     _ver = sys.version_info
     kwargs = {
         'filename': log_file_name,
@@ -67,6 +67,15 @@ def getImageFilesBySuffixes(casepath:pathlib.Path):
     image_suffixes = ['jpg', 'png', 'jpeg', 'bmp']
     image_files = get_files_with_suffixes(casepath, image_suffixes)
     return image_files
+
+def getImageFileByJsonFile(json_file:pathlib.Path):
+    imgSuffixs=['.jpg', '.png', '.bmp']
+    bindImgPath=None
+    for imgSuffix in imgSuffixs:
+        bindImgPath = json_file.with_suffix(imgSuffix)
+        if bindImgPath.is_file():
+            break
+    return bindImgPath
 
 # Function to find the intersection of two line segments
 def line_intersection(line1, line2):
@@ -284,6 +293,17 @@ def islineInVertical(measLine):
 
     return oneLineVertical
 
+def getCaseRelatedPathFromAbsolutePath(casepath:pathlib.Path)->str:
+    """
+    get the case related path from absolute path;
+    input: absolute path , eg:"'/a/b/c/301PACS02-2201041312.01/frm-0002.png'"
+    output: case related path, eg:"301PACS02-2201041312.01/frm-0002.png"
+    """
+    allparts=casepath.parts
+    casepath=pathlib.Path(*allparts[-2:])
+    return str(casepath)
+
+
 from enum import Flag
 class AnnoFormatVersion(Flag):
     """
@@ -344,9 +364,9 @@ class JsonParserFor301PX:
         if self.isFormatV1():
            self.m_result= self.parseJsonInPACSfolderV1(self.m_jsonPath, self.m_imagefileslist)
         elif self.isFormatV2():
-           self.m_result= self.parseJsonInPACSfolderV2(self.m_jsonPath, self.m_imagefileslist)
+           self.m_result= self.parseAllJsonsInCasefolderV2(self.jsonsPathlist)
         else:
-           logger.info(f"Err: json file[{self.m_jsonPath}] format is not supported.")
+           logger.error(f"Err: json file[{self.m_jsonPath}] format is not supported.")
            self.m_result=(-1, None)
 
         return self.m_result
@@ -380,7 +400,7 @@ class JsonParserFor301PX:
 
             if isinstance(jsobj, list) and all("name" in item and "points" in item for item in jsobj):
                 return AnnoFormatVersion.V1
-            elif isinstance(jsobj, dict) and "horizontal" in jsobj and "vertical" in jsobj:
+            elif isinstance(jsobj, dict) and ("horizontal" in jsobj or "vertical" in jsobj):
                 return AnnoFormatVersion.V2
             else:
                 return AnnoFormatVersion.UNKNOWN
@@ -459,16 +479,71 @@ class JsonParserFor301PX:
                 allimgMeasPairs.append(imgMeasPair)
         return [0, allimgMeasPairs]
 
-
-    def parseJsonInPACSfolderV2(self, jsonPath:pathlib.Path, imagefileslist:list):
+    def parseOneJsonInCasefolderV2(self, jsonPath:pathlib.Path):
         """
-        parse the json file in case folder, assume there is only one json, which include all images and measures information;
+        parse the json file in case folder, assume there is only one json match same name image, which include same name image's measures information;
         input: json path
-        output: tupe(return code, parsed info)
-        - eton@241222;
+        output: tupe(return code, parsed info) if failed else the (image path, measure points) tuple;
+        - eton@250225 first version;
         """
-        logger.info(f"Error: not support yet.")
-        return (-1, None)
+        errResult = (-1, None)
+
+        if not jsonPath.is_file():
+            logger.error(f"Error: json file[{jsonPath}] not exist.")
+            return errResult
+        try:
+            with open(jsonPath, 'r') as fp:
+                jsobj = json.load(fp)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing failed: {str(e)}")
+            return errResult
+        except Exception as e:
+            logger.error(f"File read error: {str(e)}")
+            return errResult
+        
+        points = []
+        measureKeyNames=['horizontal', 'vertical'] # Extract horizontal,vertical line points (x1,y1) and (x2,y2)
+        for keyName in measureKeyNames:
+            if keyName in jsobj:
+                lineSeg = jsobj[keyName] if keyName in jsobj else None
+                if lineSeg is not None:
+                    try:
+                        points.extend([(lineSeg['x1'], lineSeg['y1']), (lineSeg['x2'], lineSeg['y2'])])
+                    except Exception as e:
+                        logger.error(f"Error: json file[{getCaseRelatedPathFromAbsolutePath(jsonPath)}] has invalid points. lineSeg={lineSeg}")
+                        return errResult
+                
+        if len(points) < 4:
+            logger.error(f"Error: json file[{getCaseRelatedPathFromAbsolutePath(jsonPath)}] has {len(points)} points < 4.")
+            return errResult
+
+        bindImgPath=getImageFileByJsonFile(jsonPath)
+
+        if not isinstance(bindImgPath, pathlib.Path) or not bindImgPath.is_file():
+            logger.error(f"Error: json file[{getCaseRelatedPathFromAbsolutePath(jsonPath)}] has no image file.")
+            return errResult            
+        imgMeasPair=(bindImgPath, points)
+
+        return imgMeasPair
+    def parseAllJsonsInCasefolderV2(self, jsonsPathlist:List[pathlib.Path]):
+        """
+        parse the json file in case folder, assume there is only one json match same name image, which include same name image's measures information;
+        input: json path list
+        output: tupe(return code, parsed info)
+        - eton@250225 first version;
+        """
+        allimgMeasPairs=[]
+        errResult = (-1, None)
+        for jsonPath in jsonsPathlist:
+            resultTuple = self.parseOneJsonInCasefolderV2(jsonPath)
+            expectImgPath, expectPoints = resultTuple
+            if not isinstance(expectImgPath, pathlib.Path) or not expectImgPath.is_file() or not isinstance(expectPoints, list):
+                logger.error(f"Error: json file[{getCaseRelatedPathFromAbsolutePath(jsonPath)}] parse failed.")
+                continue
+            imgMeasPair=(expectImgPath, expectPoints)
+            allimgMeasPairs.append(imgMeasPair)
+
+        return [0, allimgMeasPairs]
 
 def find_pointsOnOrthogonalLineByDistance(point1, point2, outLen:float):
     """
@@ -740,7 +815,7 @@ def process_multiPACScases(casesFolder):
 
         if 0 != failed:
             logger.error(f"process pacs folder:[{icase.name}] failed!!!")
-            break
+            continue ##break
         else:
             logger.info("process pacs folder success,,,")
 
