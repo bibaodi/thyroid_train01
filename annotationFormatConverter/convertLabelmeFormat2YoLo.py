@@ -5,6 +5,7 @@
 
 import datetime
 import logging
+import time
 
 from tqdm import tqdm
 from multimethod import multimethod
@@ -32,12 +33,40 @@ import re
 ## !pip install xlrd
 
 class GetInfoFromExternalSpreadSheetFile:
-    def __init__(self):
-        pass
+    static_member4NotMatched=int(9527)
+
+    def __init__(self,excelFile:str, sheetName:str,colName_select:str, outputColName:str):
+        self.excelFile=excelFile
+        self.sheetName=sheetName
+        self.sheet1Dataframe=None
+
+        colName_tirads=outputColName #u'ti_rads' 
+        data = {}
+        with pandas.ExcelFile(excelFile) as xls:
+            data[sheetName] = pandas.read_excel(xls, sheetName, usecols=[colName_tirads, colName_select])
+        
+        self.sheet1Dataframe= data[sheetName]
+
+    def isMatchedValueVaild(self, matchedValue:int):
+        if  not isinstance(matchedValue, (int, float)):
+            return False
+        if self.static_member4NotMatched == matchedValue:
+            return False
+        return True
+
+    @staticmethod
+    def mapBethesda06ToBengNMalign(inclass:int=0):
+        if inclass <=1: #NULL, 0,1->0
+            return 0
+        elif inclass<=2:# 2->Benign
+            return 1
+        else:#3-6->Malignant
+            return 2
     
     @staticmethod
     def convert_leading_digits_to_number(tirads_str:str, default_class:int=0):
         if type(tirads_str) is not str or len(tirads_str)<1:
+            logger.error(f"Err: input tirads_str is not string or empty:{tirads_str}")
             return default_class
             #raise ValueError("Input string is empty")
 
@@ -50,24 +79,17 @@ class GetInfoFromExternalSpreadSheetFile:
                 digits += char
             else:
                 break
-
+        logger.info(f"debug: tirads_str={tirads_str}, digits={digits}")
         # Check if any digits were collected
         if digits:
             return int(digits)
         else:
             return default_class
 
-    @staticmethod
-    def extractAllMatchedFileName(excelFile:str, sheetName:str, colName_select:str, targetKeyToMatch:str, outputColName:str):
-        colName_tirads=outputColName #u'ti_rads'
-        
-        data = {}
-        with pandas.ExcelFile(excelFile) as xls:
-            data[sheetName] = pandas.read_excel(xls, sheetName, usecols=[colName_tirads, colName_select])
-        
-        sheet1Dataframe= data[sheetName]
+    def extractAllMatchedFileName(self, excelFile:str, sheetName:str, colName_select:str, targetKeyToMatch:str, outputColName:str):
+        colName_tirads=outputColName #u'ti_rads' 
+        sheet1Dataframe= self.sheet1Dataframe#data[sheetName]
         #print(type(sheet1Dataframe),sheet1Dataframe.shape,sheet1Dataframe[0:5][:], sheet1Dataframe[colName_select][0:5])
-        eleNum=sheet1Dataframe.shape[0]
 
         if type(targetKeyToMatch) is not str:
             targetKeyToMatch=str(targetKeyToMatch)
@@ -75,7 +97,7 @@ class GetInfoFromExternalSpreadSheetFile:
         keyCol = sheet1Dataframe[colName_select]
         valCol = sheet1Dataframe[outputColName]
         # Target value to match in ColumnA
-        corresponding_value = '0'
+        corresponding_value = self.static_member4NotMatched
         
         # Find the row where ColumnA matches the target value
         if 0: # match by equal
@@ -91,19 +113,25 @@ class GetInfoFromExternalSpreadSheetFile:
             logger.info(f"debug: The [{targetKeyToMatch}] corresponding value in {outputColName} is: {corresponding_value}")
         else:
             logger.warning(f"Warning: No match found for the target value: {targetKeyToMatch}")
+        
         if  type(corresponding_value) is list and  len(corresponding_value)>0:
-            return corresponding_value[0]
+            if type(corresponding_value[0]) is not str:
+                return str(corresponding_value[0])
+            else:
+                return corresponding_value[0]
         else:
-            return '0'
-
-    def testIt(self):
+            return str(self.static_member4NotMatched)
+    
+    @staticmethod
+    def testIt():
         exlfile=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         sheetName="origintable"
         selectColName='access_no'
         matchKey='02.202401010411.01'
         outputColName=u'ti_rads'
 
-        matchedTRs=GetInfoFromExternalSpreadSheetFile.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
+        spreadsheetReader = GetInfoFromExternalSpreadSheetFile(excelFile, sheetName, selectColName, outputColName)
+        matchedTRs=spreadsheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
         matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
         logger.info(f"matchedTR={matchedTRs}, {matchedTRi}")
 
@@ -195,6 +223,8 @@ class LabelmeFormat2YOLOFormat:
         self.sheetName=sheetName
         self.selectColName=selectColName
         self.outputColName=outputColName
+
+        self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
         
     @staticmethod
     def rectFromPixelToYoloFormat_CenterXYWH_inPercent(rectInPos:list, imgWidth:int, imgHeight:int):
@@ -353,7 +383,10 @@ class LabelmeFormat2YOLOFormat:
             if type(debug_this) is not None and debug_this:
                 ImageOperation.showRectInImg(image_file, shape_rect, lbm_pointsInOneShape)
             #03 rectangle to YOLO
+            image_op_start = time.time()
             imgW, imgH = ImageOperation.getImageSizeWithoutReadWholeContents(image_file)
+            image_op_end = time.time()
+            logging.info(f"performance: Image operation took {image_op_end - image_op_start:.4f} seconds")
             shape_yolorect=LabelmeFormat2YOLOFormat.rectFromPixelToYoloFormat_CenterXYWH_inPercent(shape_rect, imgW, imgH)
             #03.2-add class to label
             matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
@@ -364,9 +397,18 @@ class LabelmeFormat2YOLOFormat:
             outputColName=self.outputColName
             sheetName=self.sheetName
 
-            matchedTRs=GetInfoFromExternalSpreadSheetFile.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
+            spreadsheet_op_start = time.time()
+            spreadSheetReader = self.spreadSheetReader #GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+            matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
+            spreadsheet_op_end = time.time()
+            logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
             matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            shape_yolorect.insert(0, matchedTRi)
+            #if not spreadSheetReader.isMatchedValueVaild(matchedTRi) or matchedTRi <1:
+            #    logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs},remove TI0")
+            #    continue
+            BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
+            logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
+            shape_yolorect.insert(0, BenignMalign3Class)
             
             allRects.append(shape_yolorect)
             #print(f"debug: shape_rect={shape_rect}, shape_yolorect={shape_yolorect}")
@@ -405,26 +447,25 @@ class LabelmeFormat2YOLOFormat:
         working_dir=pathlib.Path(casesFolder)
         casefolders = working_dir.iterdir()
 
-        for icase in tqdm(casefolders, desc="PACS Format Converting2YOLO:"):
+        for icase in tqdm(casefolders, desc="PACS LabelmeFormat Converting2YOLO:"):
             icasepath=icase
             caseName=icasepath.name
             if caseName.startswith("YOLO"):
                 continue
-            logger.info(f"\n\n^^^Process:{icasepath}")
+            logger.info(f"^^^Process:{icasepath}")
             failed = self.processOnePACSfolder(icasepath)
 
             if 0 != failed:
-                logger.info(f"\tprocess pacs folder failed!!!")
+                logger.error(f"process pacs folder failed!!!")
                 break
             else:
-                logger.info(" process pacs folder success,,,")
-
+                logger.info("process pacs folder success,,,")
 
 
 def main_entrance():
     initLogger()
-    if len(sys.argv)<2:
-        print(f"App ImageFolder")
+    if len(sys.argv)<3:
+        print(f"App ImageFolder spreadsheetFile.xls")
     else:
         imgfolder=pathlib.Path(sys.argv[1])
         if False == imgfolder.is_dir():
@@ -432,13 +473,13 @@ def main_entrance():
             return -1
         logger.info(f"Processing:{imgfolder}...")
 
-        exlfile=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
+        exlfile= sys.argv[2] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
-        outputColName=u'ti_rads'
+        outputColName=u'bom' #'ti_rads'#u'bom' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.yolofmt')
+        outputYoloPath=imgfolder.with_suffix('.yoloBoM')
         fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
-        fmtConverter.process_multiPACScases( imgfolder)
+        fmtConverter.process_multiPACScases(imgfolder)
 
 def test_it():
     rootFolder=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat'
@@ -461,3 +502,8 @@ if __name__ == "__main__":
         print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
     main_entrance()
     print(f"Done.")
+
+#250112 run $ python annotationFormatConverter/convertLabelmeFormat2YoLo.py /mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat /mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/301PACS_database_v241229.xlsx
+#250113 run $ python annotationFormatConverter/convertLabelmeFormat2YoLo.py \
+# /mnt/f/241129-zhipu-thyroid-datas/17--labelmeFormatOrganized/301pacsDataInLbmfmtRangeY22-24 \
+# /mnt/f/241129-zhipu-thyroid-datas/17--labelmeFormatOrganized/301pacsDataInLbmfmtRangeY22-24/301PACS_database_RangeY22-24_V250113.xlsx
