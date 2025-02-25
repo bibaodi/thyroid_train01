@@ -40,13 +40,21 @@ def initLogger():
     # Format the date and time as a string
     formatted_date_time = now.strftime("%y%m%dT%H%M%S")
     # Create the log file name
-    log_file_name = f"convert301PACS_formart_{formatted_date_time}.log"
+    log_file_name = f"convert301PACS_2labelme_formart_{formatted_date_time}.log"
     _ver = sys.version_info
-    if _ver.minor < 10:
-        print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
-        logging.basicConfig(filename=log_file_name,  level=logging.DEBUG)
+    kwargs = {
+        'filename': log_file_name,
+        'level': logging.DEBUG,
+        'format': '%(levelname).1s%(asctime)s %(filename)s:%(lineno)d] %(message)s',
+        'datefmt': '%Y%m%d %H:%M:%S'
+    }
+    
+    if _ver.minor >= 10:
+        kwargs['encoding'] = 'utf-8'
     else:
-        logging.basicConfig(filename=log_file_name, encoding='utf-8', level=logging.DEBUG)
+        print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
+    logging.basicConfig(**kwargs)
+    
 
 
 def get_files_with_suffixes(directory: pathlib.Path, suffixes: List[str]) -> List[pathlib.Path]:
@@ -154,7 +162,7 @@ def rotatedRectangleDefinedEllipseToPolygon(rrEllipse:tuple):
 
     return list_of_tuples
 
-class Converter_301PACS:
+class Converter_301PACS2Labelme:
     def __init__(self, casepath:pathlib.Path, imgfile:str=''):
         self.m_casePath=casepath
         self.m_imgname = imgfile
@@ -313,12 +321,17 @@ class JsonParserFor301PX:
     - eton@241225 create this class for support multiple json format from Daniel for 301 PACS;
     """
        
-    def __init__(self, jsonPath:pathlib.Path, imagefileslist:list):
+    def __init__(self, jsonsPath:List[pathlib.Path], imagefileslist:list):
         """
         do basic check for input json file;
         find the verison then parse the json file;
         """
-        self.m_jsonPath=jsonPath
+        self.jsonsPathlist=jsonsPath
+        if not (isinstance(jsonsPath, list) and
+               all(isinstance(p, pathlib.Path) for p in jsonsPath)):
+            raise TypeError(f"jsonsPath must be List[pathlib.Path], got {type(jsonsPath)}")
+            
+        self.m_jsonPath=jsonsPath[0] if len(jsonsPath) > 0 else None
         self.m_imagefileslist=imagefileslist
         self.m_formattVer=AnnoFormatVersion.UNKNOWN
         self.m_result={0, "OK"}
@@ -328,8 +341,6 @@ class JsonParserFor301PX:
             self.m_formattVer = self.getDataFormatVersion()
 
     def parseIt(self):
-        return self.__call__()
-    def __call__(self):
         if self.isFormatV1():
            self.m_result= self.parseJsonInPACSfolderV1(self.m_jsonPath, self.m_imagefileslist)
         elif self.isFormatV2():
@@ -339,10 +350,13 @@ class JsonParserFor301PX:
            self.m_result=(-1, None)
 
         return self.m_result
+        
+    def __call__(self):
+        return self.parseIt()
 
     def isJsonfileValid(self):
         jsonfile = self.m_jsonPath
-        if not jsonfile:
+        if not isinstance(jsonfile, pathlib.Path) or not jsonfile.is_file():
             logger.info(f"Err: json file[{self.m_jsonPath}] not exist.")
             return False
         try:
@@ -425,7 +439,7 @@ class JsonParserFor301PX:
                 point1=pointTupleList[-1]
                 point2=pointTupleList[-2]
                 oneLineSegments=[point1, point2]
-                imgMeasPair=(bindImgPath, oneLineSegments)
+                imgMeasPair=(bindImgPath, oneLineSegments) #(image path, image measure points);
             elif 4 == len(pointTupleList):
                 twolines=[]
                 for idx in range(0, 4, 2):
@@ -535,10 +549,9 @@ def processOnePACSfolder(casepath:pathlib.Path):
     if len(jsons) < 1:
         logger.error("Err: json file not found in casefolder:{casepath}")
         return -1
-    jsonpath = jsons[0]
-    jsonParser=JsonParserFor301PX(jsonpath, imgs)
     
-    ret, measInfo = jsonParser()
+    jsonParser=JsonParserFor301PX(jsons, imgs)
+    ret, measInfo = jsonParser.parseIt()
     logger.info(f"debug: ret={ret}, meas={measInfo}")
     if ret <0:
         logger.error(f"Err: parse json failed")
@@ -580,7 +593,7 @@ def processOnePACSfolder(casepath:pathlib.Path):
         if idx4OnlyOneLine >=0:
             onlyOneLinePair = imgMeasPair[idx4OnlyOneLine]
                         
-    cvter = Converter_301PACS(casepath)
+    cvter = Converter_301PACS2Labelme(casepath)
     for imgMeasPair in allimgMeasPairs: ##03 --draw or save to image 
         bindImgPath = imgMeasPair[0]
         measItem =  imgMeasPair[1]
@@ -612,8 +625,101 @@ def processOnePACSfolder(casepath:pathlib.Path):
         if False and drawedImg is not None:
             cvter.applyImageResult2fileOrVisual(drawedImg, True)
         cvter.saveConvertedPairToFile(bindImgPath, shapePolygon, labelmefolderpath)
+    return 0
     
 
+def processOnePACSfolder4V2MultiNodulesOneCase(casepath:pathlib.Path):
+    if isinstance(casepath, str):
+        casepath=pathlib.Path(casepath)
+    if  not casepath.is_dir():
+        logger.error(f"not exist dir:{casepath}")
+        return -1
+        
+    labelmefolderpath=getPath4AfterConverted(casepath)
+    
+    imgs=getImageFilesBySuffixes(casepath)
+    annojsons=[ijson for ijson in sorted(casepath.glob("*.json"))]
+
+    if len(annojsons) < 1:
+        logger.error("Err: json file not found in casefolder:{casepath}")
+        return -1
+    
+    jsonpath = jsons[0]
+    jsonParser=JsonParserFor301PX(jsonpath, imgs)
+    ret, measInfo = jsonParser.parseIt()
+    logger.info(f"debug: ret={ret}, meas={measInfo}")
+    if ret <0:
+        logger.error(f"Err: parse json failed")
+        return -1
+    allimgMeasPairs=measInfo
+    
+    idx4OnlyOneLine=-1
+    axisLenForOneLine=None
+    for imgIdx, imgMeasPair in enumerate(allimgMeasPairs): ##02- get another line length as ellipise another axis;
+        bindImgPath = imgMeasPair[0]
+        measItem =  imgMeasPair[1]
+        oneLineVertical = True
+        if  type(measItem) is not list:
+            logger.error(f"Err:Num{imgIdx} meas points type Not list.")
+            continue
+        NofPoints = len(measItem)
+        if 2 == NofPoints:
+            idx4OnlyOneLine = imgIdx
+            logger.info(f"debug: One Line segment:{measItem}")
+            pt1 = measItem[0]
+            pt2 = measItem[1]
+
+            deltaX=abs(pt1[0]-pt2[0])
+            deltaY=abs(pt1[1]-pt2[1])
+            if deltaX > deltaY:
+                oneLineVertical = False #horizon
+            logger.info(f"debug:oneLineVertical ={oneLineVertical}")
+            
+        elif 4 == NofPoints: #the two line item
+            for ptidx in range(0, NofPoints, 2):
+                oneitem =measItem[ptidx: ptidx+2]
+                oneLine = oneitem
+                curisVertical =  islineInVertical(oneLine)
+                if True == (oneLineVertical ^ curisVertical):
+                    axisLenForOneLine = line_length(oneLine)
+                logger.info(f"debug:line{oneLine} vertical={curisVertical}, axisLenForOneLine={axisLenForOneLine}")
+        
+            logger.info(f"debug:two Line segments:{measItem}")
+        if idx4OnlyOneLine >=0:
+            onlyOneLinePair = imgMeasPair[idx4OnlyOneLine]
+                        
+    cvter = Converter_301PACS2Labelme(casepath)
+    for imgMeasPair in allimgMeasPairs: ##03 --draw or save to image 
+        bindImgPath = imgMeasPair[0]
+        measItem =  imgMeasPair[1]
+        if  type(measItem) is not list:
+            logger.error(f"Err:Num{imgIdx} meas points type Not list.")
+            continue
+        NofPoints = len(measItem)
+    
+        img=cv2.imread(bindImgPath)
+        drawedImg = None
+
+        if 2 == NofPoints:
+            if axisLenForOneLine is None:
+                logger.error(f"canot found another length for this only one line image!!! ignore this.")
+                continue
+            pt1 = measItem[0]
+            pt2 = measItem[1]
+            drawedImg, shapePolygon = processOneLineAndALength(img, pt1, pt2, axisLenForOneLine)
+
+        elif 4 == NofPoints: #the two line item
+            logger.info(f"two Line segments:{measItem}")
+            line1=measItem[0:2]
+            line2=measItem[2:4]
+            ellipse = fit_ellipse_to_lines(line1, line2)
+            shapePolygon = rotatedRectangleDefinedEllipseToPolygon(ellipse)
+            logger.info(f"debug: ellipse type={type(ellipse)}, ellipse={ellipse}, shapePolygon={type(shapePolygon[0])}")
+
+            drawedImg = img
+        if False and drawedImg is not None:
+            cvter.applyImageResult2fileOrVisual(drawedImg, True)
+        cvter.saveConvertedPairToFile(bindImgPath, shapePolygon, labelmefolderpath)
     return 0
     
 
