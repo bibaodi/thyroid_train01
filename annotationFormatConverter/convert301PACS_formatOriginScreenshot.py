@@ -39,7 +39,7 @@ def initLogger():
     # Format the date and time as a string
     formatted_date_time = now.strftime("%y%m%dT%H%M%S")
     # Create the log file name
-    log_file_name = f"convert301PACS_formart_{formatted_date_time}.log"
+    log_file_name = f"convert301PACS_format_{formatted_date_time}.log"
     _ver = sys.version_info
     if _ver.minor < 10:
         print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
