@@ -4,6 +4,7 @@
 # eton@241221 update for one case as 3d; oneline is ellipse which take axis from two lines image;
 # eton@241222 make it available from PACS format to labelme foramt;
 # eton@250112 refine logs and add more comments, bugfix: Path.glob donot support mulitiple wildcard`casepath.glob('*.{jpg,png,jpeg,bmp}') `, use Pathlib instead;
+# eton@250225 add support for multiple nodules in one case;
 
 """
 ./02.202401010411.01$ ls -l
@@ -237,7 +238,8 @@ class Converter_301PACS2Labelme:
         return 0
 
 class CaseInfoStruct:
-    def __init__():
+    CaseFolderPrefix='301PX'
+    def __init__(self):
         self.point=tuple()
         self.line=[tuple(). tuple()]
         
@@ -251,7 +253,7 @@ def getPath4AfterConverted(casepath:pathlib.Path):
     substring=".000000" ##22.0000001629044-->301PACS22-1629044
     if substring in caseName:
         caseName=caseName.replace(substring, "-")
-    caseName=f"301PACS{caseName}"
+    caseName=f"{CaseInfoStruct.CaseFolderPrefix}{caseName}"
     labelmeFmtfolder=pathParent.joinpath(caseName)
 
     return labelmeFmtfolder
@@ -805,7 +807,7 @@ def process_multiPACScases(casesFolder):
     for icase in tqdm(casefolders, desc="PACS_exportedData2Labelmeformat Converting:"):
         icasepath=icase
         caseName=icasepath.name
-        if caseName.startswith("301PACS"):
+        if caseName.startswith(CaseInfoStruct.CaseFolderPrefix):
             continue
         #if "02.2024" in caseName:
         #    continue
