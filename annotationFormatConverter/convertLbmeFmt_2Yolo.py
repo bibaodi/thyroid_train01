@@ -19,13 +19,20 @@ def initLogger():
     # Format the date and time as a string
     formatted_date_time = now.strftime("%y%m%dT%H%M%S")
     # Create the log file name
-    log_file_name = f"convertTo_YOLOformart_{formatted_date_time}.log"
+    log_file_name = f"convertLbMe_2Yoloformat_{formatted_date_time}.log"
     _ver = sys.version_info
-    if _ver.minor < 10:
-        logger.warning(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
-        logging.basicConfig(filename=log_file_name,  level=logging.DEBUG)
+    kwargs = {
+        'filename': log_file_name,
+        'level': logging.DEBUG,
+        'format': '%(levelname).1s%(asctime)s %(filename)s:%(lineno)d] %(message)s',
+        'datefmt': '%Y%m%d %H:%M:%S'
+    }
+    
+    if _ver.minor >= 10:
+        kwargs['encoding'] = 'utf-8'
     else:
-        logging.basicConfig(filename=log_file_name, encoding='utf-8', level=logging.DEBUG)
+        print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
+    logging.basicConfig(**kwargs)
 
 ###-------------------excel file operation
 import pandas 
@@ -450,6 +457,8 @@ class LabelmeFormat2YOLOFormat:
         for icase in tqdm(casefolders, desc="PACS LabelmeFormat Converting2YOLO:"):
             icasepath=icase
             caseName=icasepath.name
+            if icasepath.is_file():
+                continue
             if caseName.startswith("YOLO"):
                 continue
             logger.info(f"^^^Process:{icasepath}")
