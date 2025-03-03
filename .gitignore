@@ -4,3 +4,4 @@
 *models/
 *.log
 *.swp
+*/__pycache__/*
