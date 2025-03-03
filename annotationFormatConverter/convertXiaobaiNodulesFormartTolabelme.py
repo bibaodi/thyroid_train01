@@ -156,7 +156,7 @@ def convert_nodule_json_v2(json_file, target_json_dir):
 
 #==========
 
-def list_folders(directory):
+def list_folders0(directory):
     try:
         folders = []
         with os.scandir(directory) as it:
@@ -193,6 +193,11 @@ def list_File_withSuffix(directory, suffix:str="_MARK.json"):
 def processMultiFolders(working_dir:str):
     casefolders = list_folders(working_dir)
     totalCaseCount=len(casefolders)
+    if 0 == totalCaseCount:
+        casefolders.append(working_dir)
+        totalCaseCount=len(casefolders)
+        
+    print(f"casefolders={casefolders}")
     #caseindex=0
 
     for caseindex, icase in  enumerate(casefolders):
@@ -245,6 +250,7 @@ def testOnSingleJson():
 
 
 if "__main__" == __name__:
-    working_dir=r"/mnt/f/241129-zhipu-thyroid-datas/12-received_data-updates/patch241204"
-    #processMultiFolders(working_dir)
-    processMultiFolders4Patch(working_dir)
+    working_dir=r"/mnt/f/241129-xin1zhipu-thyroid-datas/01-mini-batch/dong5k-20"
+    print((f"working_dir={working_dir}"))
+    processMultiFolders(working_dir)
+    #processMultiFolders4Patch(working_dir)
