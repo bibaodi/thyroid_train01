@@ -3,13 +3,18 @@ import sys
 import datetime
 import logging
 
-from multimethod import multimethod
+"""
+How to set up Logging for Python Projects
 
+    1. Logger: Loggers are instantiated using logging.getLogger(), Use __name__ to automatically name your loggers
+    2. Formatters: A logger needs a ‘formatter’ and ‘handler’ to specify the format and location of the log messages
+    3. Handlers: If a handler is not defined, you will not see any log message outputs
+"""
 
 #logger = logging.getLogger(__name__)
-logger = None
-APP_NAME = "AppName"
-def initLogger(log_file_name_prefix:str="python-glog"):
+glogger = None
+APP_NAME = "pyglog"
+def initLogger(log_file_name_prefix:str="pyglog"):
     # Get the current date and time
     now = datetime.datetime.now()
     # Format the date and time as a string
@@ -32,9 +37,16 @@ def initLogger(log_file_name_prefix:str="python-glog"):
     
     logger = logging.getLogger(log_file_name_prefix)
 
-    # global logger
-    # if logger is None:
-    #     logger = logger0
+    global glogger
+    if glogger is None:
+         glogger = logger
+         print(f"glogger is None, set to {glogger}")
     return logger
 
-logger = initLogger(APP_NAME)
+def get_logger():
+    global glogger
+    if glogger is None:
+        glogger = initLogger(APP_NAME)
+    return glogger
+
+#logger = initLogger(APP_NAME)
