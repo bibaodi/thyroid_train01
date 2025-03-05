@@ -7,7 +7,9 @@ version: 0.1
 import os, sys
 import json
 import pathlib
+import shutil
 import typing
+from tqdm import tqdm
 import numpy
 import numpy as np
 # Add the utils directory to the Python path
@@ -21,19 +23,30 @@ def parseXbfmtV2For301PxThyNodu(json_file:typing.Union[str, pathlib.Path], targe
         deal with one xiaobai's json which have multi-labelme json
         - if points less than 4, ignore it. --eton@241202
     """
+    if isinstance(json_file, str):
+        json_file = pathlib.Path(json_file)
     
-    if not os.path.exists(target_json_dir):
-        print(f"json target directory not exist.")
+    if isinstance(target_json_dir, str):
+        target_json_dir = pathlib.Path(target_json_dir)
+    if not target_json_dir.is_dir():
+        glog.glogger.warn(f"json target directory not exist. will create it")
+        target_json_dir.mkdir(parents=True, exist_ok=True)
+
+    bindImgfile = LabelmeJson.getImageFileByJsonFile(json_file)
+    if bindImgfile is None:
+        print(f"bind image file not exist.")
         return -1
+    
+
     # 01-read from nodule-json-file
     with open(json_file, 'r') as f:
-        json_ = json.load(f)
-        all_imgs_datas = json_['data']
+        xbjsonobj = json.load(f)
+        all_imgs_datas = xbjsonobj['data']
         one_data_item = all_imgs_datas[0]
 
         if False:#debug
-            print("json has item number=", len(json_))
-            for i in json_:
+            print("json has item number=", len(xbjsonobj))
+            for i in xbjsonobj:
                 print(f"\titem[{i}]")
             print("total has data number=", len(all_imgs_datas), type(all_imgs_datas))
             print(type(all_imgs_datas[0]))
@@ -49,16 +62,18 @@ def parseXbfmtV2For301PxThyNodu(json_file:typing.Union[str, pathlib.Path], targe
             frameNumber = one_data_item['frameNumber']
             #--02 extract json per image
             polygonPoints=[]
-            filename = f"frm-{(frameNumber+1):04d}"
+
+            ofilename = f"frm-{(frameNumber+1):04d}{bindImgfile.stem}"
             #--02.1 remove the exist json file
-            target_json_name = os.path.join(target_json_dir, f"{filename}.json")
-            if os.path.exists(target_json_name):
-                os.remove(target_json_name)
-                #print(f">>>>>delete file{target_json_name}")
+            ojsonfilePath = target_json_dir.joinpath(f"{ofilename}.json")
+            oImgfilePath = ojsonfilePath.with_suffix(bindImgfile.suffix)
+            if os.path.exists(ojsonfilePath):
+                os.remove(ojsonfilePath)
+                #print(f">>>>>delete file{ojsonfilePath}")
 
             #--03 create target labelme format json
             target_json=LabelmeJson.getOneTargetObj()
-            target_json['imagePath']=f"{filename}.png"
+            target_json['imagePath']=str(oImgfilePath.name)
             target_json['shapes'].clear()
 
             lesions = one_data_item["lesions"]
@@ -69,7 +84,7 @@ def parseXbfmtV2For301PxThyNodu(json_file:typing.Union[str, pathlib.Path], targe
 
                     points_len = int((len(polygonPoints)))
                     if points_len < 4:
-                        print(f"\tpoints not enough 4:[{target_json_dir}/{filename}], ignore it.")
+                        print(f"\tpoints not enough 4:[{target_json_dir}/{ofilename}], ignore it.")
                         continue
 
                     all_points = numpy.zeros((points_len, 2))
@@ -85,7 +100,7 @@ def parseXbfmtV2For301PxThyNodu(json_file:typing.Union[str, pathlib.Path], targe
                             available_pts.append(all_points[pt])
 
                     if len(available_pts) < 4:
-                        print(f"\tavailable points not enough 4:[{target_json_dir}/{filename}], ignore it.")
+                        print(f"\tavailable points not enough 4:[{target_json_dir}/{ofilename}], ignore it.")
                         continue
                     #--04 create target labelme format json
                     #if lesion_idx>0:
@@ -101,17 +116,42 @@ def parseXbfmtV2For301PxThyNodu(json_file:typing.Union[str, pathlib.Path], targe
                 continue
 
             #--05 write to disk
-            target_json_name = os.path.join(target_json_dir, f"{filename}.json")
+            #ojsonfilePath = os.path.join(target_json_dir, f"{ofilename}.json")
+            ojsonfilePath = target_json_dir.joinpath(f"{ofilename}.json")
 
-            if os.path.exists(target_json_name):
-                os.remove(target_json_name)
-                #print(f">>>>>delete file{target_json_name}")
-            with open(target_json_name, 'w') as jfp:
+            if ojsonfilePath.is_file():
+                os.remove(ojsonfilePath)
+            with open(ojsonfilePath, 'w') as jfp:
                 json.dump(target_json, jfp)
-    print(f"\t<<<one case done.")
 
+            originImgfullPath  = target_json_dir.joinpath(bindImgfile)
+            shutil.copy(originImgfullPath, oImgfilePath)
     return 0
 
+def process_multiFilesPairInOneFolder(casesFolder:typing.Union[str, pathlib.Path]):
+    if isinstance(casesFolder, str):
+        casesFolder = pathlib.Path(casesFolder)
+    
+    ojpath=casesFolder.joinpath('olabelme')
+    jsonfilelist = list(casesFolder.glob('**/*.json'))
+
+    glog.glogger.info(f"^^^Process:{casesFolder}")
+    for ijson in tqdm(jsonfilelist, desc="PACS_xbfmtData2Labelmeformat Converting:"):
+        ijsonpath=ijson
+        filenamepart=ijsonpath.name
+        if ijsonpath.is_dir():
+            continue
+        if filenamepart.startswith('frm-'):
+            continue
+            
+        
+        failed = parseXbfmtV2For301PxThyNodu(ijsonpath, ojpath)
+
+        if 0 != failed:
+            glog.glogger.error(f"process pacs folder:[{ijson.name}] failed!!!")
+            continue ##break
+        else:
+            glog.glogger.info("process pacs folder success,,,")
 
 
 def test():
@@ -122,7 +162,7 @@ def test():
 if __name__ == "__main__":
     glog.glogger = glog.initLogger("convert301PX_xbfmt_2Lbmefmt")
         
-    test()
+    #test()
 
     if len(sys.argv)<2:
         print(f"Usage: App Image")
@@ -131,5 +171,5 @@ if __name__ == "__main__":
 
         casesFolder=sys.argv[1]
         #casesFolder=r"/mnt/f/241129-zhipu-thyroid-datas/10-received-datas/241216-staticPACS_censoredOut/censor_out_pre/02.202401031860.01"
-        logger.info(f"ProcessHome:{casesFolder}")
-        parseXbfmtV2For301PxThyNodu(casesFolder)
+        glog.glogger.info(f"ProcessHome:{casesFolder}")
+        process_multiFilesPairInOneFolder(casesFolder)
