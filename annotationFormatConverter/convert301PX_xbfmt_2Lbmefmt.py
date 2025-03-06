@@ -29,19 +29,26 @@ def parseXbfmtV2For301PxThyNodu(json_file:typing.Union[str, pathlib.Path], targe
     if isinstance(target_json_dir, str):
         target_json_dir = pathlib.Path(target_json_dir)
     if not target_json_dir.is_dir():
-        glog.glogger.warn(f"json target directory not exist. will create it")
+        glog.glogger.warning(f"json target directory not exist. will create it")
         target_json_dir.mkdir(parents=True, exist_ok=True)
 
     bindImgfile = LabelmeJson.getImageFileByJsonFile(json_file)
     if bindImgfile is None:
-        print(f"bind image file not exist.")
+        glog.glogger.error(f"bind image file not exist.{bindImgfile.name}")
         return -1
     
 
     # 01-read from nodule-json-file
     with open(json_file, 'r') as f:
         xbjsonobj = json.load(f)
+        if 'data' not in xbjsonobj:
+            glog.glogger.warning(f"[{json_file.name}] not have 'data' key, ignore it.")
+            return -1
+        if len(xbjsonobj['data'])<1:
+            glog.glogger.warning(f"[{json_file.name}] data item empty, ignore it.")
+            return -1
         all_imgs_datas = xbjsonobj['data']
+
         one_data_item = all_imgs_datas[0]
 
         if False:#debug
@@ -143,7 +150,6 @@ def process_multiFilesPairInOneFolder(casesFolder:typing.Union[str, pathlib.Path
             continue
         if filenamepart.startswith('frm-'):
             continue
-            
         
         failed = parseXbfmtV2For301PxThyNodu(ijsonpath, ojpath)
 
@@ -151,7 +157,7 @@ def process_multiFilesPairInOneFolder(casesFolder:typing.Union[str, pathlib.Path
             glog.glogger.error(f"process pacs folder:[{ijson.name}] failed!!!")
             continue ##break
         else:
-            glog.glogger.info("process pacs folder success,,,")
+            pass #glog.glogger.info("process pacs folder success,,,")
 
 
 def test():
