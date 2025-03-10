@@ -1,0 +1,44 @@
+src_path: /Users/mouxiaoyong/Documents/images/dong5000-clean/dong5000-clean_csv_crop
+
+path: /Users/mouxiaoyong/Documents/PycharmProjects/csv_test/train_models/datasets/thyroid_nodules_bom  # 数据集根目录
+train: train  # 训练集目录
+val: val      # 验证集目录
+
+# 类别设置
+nc: 2
+names: ['0', '1']
+
+# 模型参数
+model: nodule_bom_all_v01.pt #yolov8n.pt  # 使用YOLOv8-nano分类预训练模型
+task: classify  # 设置任务类型为分类
+
+# 训练参数
+epochs: 100
+batch: 32
+imgsz: 96  # 分类模型通常使用224x224
+
+# 数据增强设置
+augment:
+  hsv_h: 0.0  # HSV色调增强
+  hsv_s: 0.0    # HSV饱和度增强
+  hsv_v: 0.4    # HSV亮度增强
+  degrees: 0.0   # 旋转角度（禁用旋转，避免影响目标形状）
+  translate: 0.0  # 平移
+  scale: 0.5     # 缩放
+  shear: 0.0     # 剪切（禁用剪切，避免影响目标形状）
+  perspective: 0.0  # 透视（禁用透视，避免影响目标形状）
+  flipud: 0.0    # 上下翻转（禁用翻转，保持目标方向）
+  fliplr: 0.0    # 左右翻转
+  mosaic: 0.0    # 禁用马赛克增强，不适用于分类任务
+  mixup: 0.0     # 禁用混合增强
+  copy_paste: 0.0  # 禁用复制粘贴
+
+# 优化器设置
+optimizer: SGD  # 使用SGD优化器
+lr0: 0.01      # 初始学习率
+lrf: 0.01      # 最终学习率因子
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3.0
+warmup_momentum: 0.8
+warmup_bias_lr: 0.1
