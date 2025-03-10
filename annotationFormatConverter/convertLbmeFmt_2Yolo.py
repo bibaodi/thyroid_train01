@@ -226,13 +226,16 @@ class ImageOperation:
 class LabelmeFormat2YOLOFormat:
     def __init__(self, outputYoloPath:pathlib.Path , exlfile:pathlib.Path, sheetName:str, selectColName:str, outputColName:str):
         self.outputYoloPath=outputYoloPath
-        self.exlfile=exlfile
+        self.exlfile=exlfile if isinstance(exlfile, pathlib.Path) else pathlib.Path(exlfile)
         self.sheetName=sheetName
         self.selectColName=selectColName
         self.outputColName=outputColName
+        if self.exlfile.is_file():
+            self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+        else:
+            logger.error(f"Err: exlfile not exist:{exlfile}, make reader as None.")
+            self.spreadSheetReader = None
 
-        self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
-        
     @staticmethod
     def rectFromPixelToYoloFormat_CenterXYWH_inPercent(rectInPos:list, imgWidth:int, imgHeight:int):
         yoloRect=[]
@@ -332,7 +335,7 @@ class LabelmeFormat2YOLOFormat:
         logger.info(f"debug: end of file create {newImagePath}")
         return 0
 
-    def parseXiaobaoJson(self, json_file:pathlib.Path, leastPointCount:int=4):
+    def parseXiaobaoJson(self, json_file:pathlib.Path, leastPointCount:int=4, **kwargs):
         """
             1. deal with one xiaobai's json;
             2. get all shape, create with rectangle;
@@ -396,25 +399,38 @@ class LabelmeFormat2YOLOFormat:
             logging.info(f"performance: Image operation took {image_op_end - image_op_start:.4f} seconds")
             shape_yolorect=LabelmeFormat2YOLOFormat.rectFromPixelToYoloFormat_CenterXYWH_inPercent(shape_rect, imgW, imgH)
             #03.2-add class to label
-            matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
+            noSpreadSheet=False
+            for key, value in kwargs.items():
+                if key == 'noSpreadSheet':
+                    noSpreadSheet = value
+                    break
+            if False == noSpreadSheet:
+                matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
+                exlfile=self.exlfile
+                selectColName=self.selectColName
+                outputColName=self.outputColName
+                sheetName=self.sheetName
 
-            outputYoloFolder=self.outputYoloPath
-            exlfile=self.exlfile
-            selectColName=self.selectColName
-            outputColName=self.outputColName
-            sheetName=self.sheetName
-
-            spreadsheet_op_start = time.time()
-            spreadSheetReader = self.spreadSheetReader #GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
-            matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
-            spreadsheet_op_end = time.time()
-            logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
-            matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            #if not spreadSheetReader.isMatchedValueVaild(matchedTRi) or matchedTRi <1:
-            #    logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs},remove TI0")
-            #    continue
-            BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
-            logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
+                spreadsheet_op_start = time.time()
+                spreadSheetReader = self.spreadSheetReader #GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+                matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
+                spreadsheet_op_end = time.time()
+                logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
+                matchedTRi=GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
+                #if not spreadSheetReader.isMatchedValueVaild(matchedTRi) or matchedTRi <1:
+                #    logger.error(f"Err: Value Not Vaild, matchedTRs={matchedTRs},remove TI0")
+                #    continue
+                BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
+                logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
+            else:
+                BenignMalign3Class=0
+                if '1malign' in str(imagefolder).lower():
+                    BenignMalign3Class=1
+                elif '0benign' in str(imagefolder).lower():
+                    BenignMalign3Class=0
+                else:
+                    logger.error(f"Err: No matched folder name for BenignMalign3Class:{imagefolder}")
+                logger.info(f"BenignMalign3Class={BenignMalign3Class}") 
             shape_yolorect.insert(0, BenignMalign3Class)
             
             allRects.append(shape_yolorect)
@@ -422,6 +438,7 @@ class LabelmeFormat2YOLOFormat:
 
             #04 save image and Yolo.txt to new folder
         if len(allRects)>0:
+            outputYoloFolder=self.outputYoloPath
             LabelmeFormat2YOLOFormat.saveImageAndLabelsToTargetPath(outputYoloFolder, image_file, allRects)
                     
         return 0
@@ -443,7 +460,7 @@ class LabelmeFormat2YOLOFormat:
             return -1
         
         for ijsonpath in jsons:
-            ret  = self.parseXiaobaoJson(ijsonpath)
+            ret  = self.parseXiaobaoJson(ijsonpath, noSpreadSheet= True)
             logger.info(f"debug: process [{ijsonpath}], ret={ret}")
             if ret <0:
                 logger.info(f"Err: parse json failed")
