@@ -531,12 +531,12 @@ class ClassificationDatasetGenerator:
                 logger.info("process pacs folder success,,,")
         return 0
 
-def main_entrance():
+def main_entrance(datasetFolder):
     initLogger()
     if len(sys.argv)<3:
         print(f"App ImageFolder spreadsheetFile.xls")
     else:
-        imgfolder=pathlib.Path(sys.argv[1])
+        imgfolder=pathlib.Path(datasetFolder)
         if False == imgfolder.is_dir():
             print(f"Error: please confirm folder exist[{str(imgfolder)}]!!!")
             return -1
@@ -568,10 +568,16 @@ def test_it():
 
 
 if __name__ == "__main__":
+    if len(sys.argv)<2:
+        print(f"Usage: App ImageFolder")
+    else:
+        glog.glogger = glog.initLogger("convert301PX_xbfmt_2Lbmefmt")
+
+        datasetFolder=sys.argv[1]
     #test_it()
     #sys.exit()  # Add exit to avoid the following code to be executed during testing.
     _ver = sys.version_info
     if _ver.minor < 10:
         print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
-    main_entrance()
+    main_entrance(datasetFolder)
     print(f"Done.")
