@@ -1,0 +1,1 @@
+- eton@250310 add train script and yaml config from daniel;
