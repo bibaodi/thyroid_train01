@@ -12,6 +12,7 @@
 
 ### progress: 1. parse the labelme json file; 2. cut the thyroid nodule region; 3. read label from BoM column which in excel file indexed by accession number; 4. save the nodule image to the classify dataset folder.
 
+# -eton@250311 support generate classfy dataset from labelme format, without the excel file. and import log from glog.
 import datetime
 import logging
 import time
