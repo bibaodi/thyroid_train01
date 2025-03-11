@@ -28,21 +28,15 @@ from multimethod import multimethod
 import pandas as pd
 from PIL import Image, UnidentifiedImageError
 
-logger = logging.getLogger(__name__)
+# Add the utils directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+import glog
+import LabelmeJson
 
-def initLogger():
-    # Get the current date and time
-    now = datetime.datetime.now()
-    # Format the date and time as a string
-    formatted_date_time = now.strftime("%y%m%dT%H%M%S")
-    # Create the log file name
-    log_file_name = f"generateClassifyDataset_{formatted_date_time}.log"
-    _ver = sys.version_info
-    if _ver.minor < 10:
-        logger.warning(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
-        logging.basicConfig(filename=log_file_name,  level=logging.DEBUG)
-    else:
-        logging.basicConfig(filename=log_file_name, encoding='utf-8', level=logging.DEBUG)
+glog.glogger = glog.initLogger("gen301PX_clsDS_fromLbmefmt")
+
+logger = glog.glogger
+
 
 ###-------------------excel file operation
 class GetInfoFromExternalSpreadSheetFile:
@@ -210,7 +204,12 @@ class ClassificationDatasetGenerator:
         self.sheetName = sheetName
         self.selectColName = selectColName
         self.outputColName = outputColName
-        self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+        if isinstance(exlfile, pathlib.Path) and self.exlfile.is_file():
+            self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+        else:
+            logger.error(f"Err: exlfile not exist:{exlfile}, make reader as None.")
+            self.spreadSheetReader = None
+
         self.cls_benignName = 'benign'
         self.cls_malignName = 'malign'
         self.cls_othersName = 'others'
@@ -372,13 +371,14 @@ class ClassificationDatasetGenerator:
 
         return 0
 
-    def getTargetRegionFromImgContent(self, imgContent: np.ndarray, regionRect:list, extendPercent:float=1.0):
+    def getTargetRegionFromImgContent(self, imgContent: np.ndarray, regionRect:list, extendPercent:float=1.0, extendThresholdMinMax:(int, int)=(10, 60)):
         """
         get the sub-image rectangle from a full image , the rectangle will be extend by a factor;
         input:
             - imgContent: origin full image;
             - region rect: target rectangle ;
             - extendPercent: the factor which will be used;
+            - extendThresholdMinMax: the min and max value threshold pixels for the extend factor, to avoid too large or too small extend;
         output:
             - the target rectangle after apply the extend factor described sub-image;
         """
@@ -386,6 +386,9 @@ class ClassificationDatasetGenerator:
         x_min, y_min, x_max, y_max=regionRect
         deltaX = max((x_max-x_min), 0) * extendPercent*0.5
         deltaY = max((y_max-y_min), 0) * extendPercent*0.5
+
+        deltaX = min(max(deltaX, extendThresholdMinMax[0]), extendThresholdMinMax[1])
+        deltaY = min(max(deltaY, extendThresholdMinMax[0]), extendThresholdMinMax[1])
 
         x_min = int(max((x_min - deltaX), 0))
         x_max = int(min((x_max + deltaX), imgColumns -1))
@@ -396,7 +399,7 @@ class ClassificationDatasetGenerator:
 
         return sub_img
 
-    def parseXiaobaoJson(self, json_file: pathlib.Path, leastPointCount: int = 4):
+    def parseXiaobaoJson(self, json_file: pathlib.Path, leastPointCount: int = 4, **kwargs):
         """
             1. deal with one xiaobai's json;
             2. get all shape, create with rectangle;
@@ -462,26 +465,42 @@ class ClassificationDatasetGenerator:
                 continue
 
             #05-get the thyroid nodule region
-            nodule_img = self.getTargetRegionFromImgContent(full_imageData, shape_rect, 2.0) # full_imageData[shape_rect[1]:shape_rect[3], shape_rect[0]:shape_rect[2]]
+            nodule_img = self.getTargetRegionFromImgContent(full_imageData, shape_rect, 2.0, (5, 30)) # full_imageData[shape_rect[1]:shape_rect[3], shape_rect[0]:shape_rect[2]]
 
-            #06-get the case info from excel file
-            matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
-            outputYoloFolder = self.outputYoloPath
-            exlfile = self.exlfile
-            selectColName = self.selectColName
-            outputColName = self.outputColName
-            sheetName = self.sheetName
+            BenignMalign3Class = GetInfoFromExternalSpreadSheetFile.static_member4NotMatched
+            noSpreadSheet=False
+            for key, value in kwargs.items():
+                if key == 'noSpreadSheet':
+                    noSpreadSheet = value
+                    break
+            if False == noSpreadSheet:
+                #06-get the case info from excel file
+                matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
+                exlfile = self.exlfile
+                selectColName = self.selectColName
+                outputColName = self.outputColName
+                sheetName = self.sheetName
 
-            spreadsheet_op_start = time.time()
-            spreadSheetReader = self.spreadSheetReader
-            matchedTRs = spreadSheetReader.extractAllMatchedFileName(exlfile, sheetName, selectColName, matchKey, outputColName)
-            spreadsheet_op_end = time.time()
-            logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
-            BenignMalign3Class = GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
-            logger.info(f"matchedTRs={matchedTRs}, matchedTRi={BenignMalign3Class}, BenignMalign3Class={BenignMalign3Class}")
+                spreadsheet_op_start = time.time()
+                spreadSheetReader = self.spreadSheetReader
+                matchedTRs = spreadSheetReader.extractAllMatchedFileName(exlfile, sheetName, selectColName, matchKey, outputColName)
+                spreadsheet_op_end = time.time()
+                logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
+                BenignMalign3Class = GetInfoFromExternalSpreadSheetFile.convert_leading_digits_to_number(matchedTRs)
+                logger.info(f"matchedTRs={matchedTRs}, matchedTRi={BenignMalign3Class}, BenignMalign3Class={BenignMalign3Class}")
+            else:
+                BenignMalign3Class=0
+                if '1malign' in str(imagefolder).lower():
+                    BenignMalign3Class=1
+                elif '0benign' in str(imagefolder).lower():
+                    BenignMalign3Class=0
+                else:
+                    logger.error(f"Err: No matched folder name for BenignMalign3Class:{imagefolder}")
+                logger.info(f"BenignMalign3Class={BenignMalign3Class}") 
 
             #07 save image and Yolo.txt to new folder
-            if BenignMalign3Class != self.spreadSheetReader.static_member4NotMatched:
+            if BenignMalign3Class != GetInfoFromExternalSpreadSheetFile.static_member4NotMatched:
+                outputYoloFolder = self.outputYoloPath
                 self.saveClassifiedImageRegionToTargetPath(outputYoloFolder, image_file, nodule_img, BenignMalign3Class)
         return 0
 
@@ -502,7 +521,7 @@ class ClassificationDatasetGenerator:
             return -1
         
         for ijsonpath in jsons:
-            ret = self.parseXiaobaoJson(ijsonpath)
+            ret = self.parseXiaobaoJson(ijsonpath, noSpreadSheet = True)
             logger.info(f"debug: process [{ijsonpath}], ret={ret}")
             if ret < 0:
                 logger.info(f"Err: parse json failed")
@@ -532,9 +551,8 @@ class ClassificationDatasetGenerator:
         return 0
 
 def main_entrance(datasetFolder):
-    initLogger()
-    if len(sys.argv)<3:
-        print(f"App ImageFolder spreadsheetFile.xls")
+    if len(sys.argv)<2:
+        print(f"App ImageFolder {spreadsheetFile.xls}")
     else:
         imgfolder=pathlib.Path(datasetFolder)
         if False == imgfolder.is_dir():
@@ -542,7 +560,7 @@ def main_entrance(datasetFolder):
             return -1
         logger.info(f"Processing:{imgfolder}...")
 
-        exlfile= sys.argv[2] #r'/mnt/f/241129-xin1zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
+        exlfile= sys.argv[2] if len(sys.argv)>=3 else 'exlfileNotExist' #r'/mnt/f/241129-xin1zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
         outputColName=u'bom' #'ti_rads'#u'bom' 
         sheetName="origintable"
@@ -551,7 +569,6 @@ def main_entrance(datasetFolder):
         fmtConverter.process_multiCases(imgfolder)
 
 def test_it():
-    initLogger()
     rootFolder=r'/mnt/f/241129-xin1zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat'
     imgfolder=pathlib.Path(rootFolder)
     oneCasefolder=r'/mnt/f/241129-xin1zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/301PACS02-2401020402.01'
@@ -572,12 +589,11 @@ if __name__ == "__main__":
         print(f"Usage: App ImageFolder")
     else:
         glog.glogger = glog.initLogger("convert301PX_xbfmt_2Lbmefmt")
-
         datasetFolder=sys.argv[1]
-    #test_it()
-    #sys.exit()  # Add exit to avoid the following code to be executed during testing.
-    _ver = sys.version_info
-    if _ver.minor < 10:
-        print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
-    main_entrance(datasetFolder)
-    print(f"Done.")
+        #test_it()
+        #sys.exit()  # Add exit to avoid the following code to be executed during testing.
+        _ver = sys.version_info
+        if _ver.minor < 10:
+            print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
+        main_entrance(datasetFolder)
+        print(f"Done.")
