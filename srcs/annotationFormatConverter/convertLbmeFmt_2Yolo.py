@@ -2,6 +2,11 @@
 # This script is used to convert the Labelme format to the YOLO format.
 # author: eton@250105
 # version: 0.1 first version
+# eton@250311 version:0.2, support no spreadsheet file.
+# eton@250314 version:0.3, support both detect and segment task data format. import log from glog.
+# yolo-segment: <class-index> <x1> <y1> <x2> <y2> ... <xn> <yn> ; range is (0,1)
+# yolo-detect: <class-index> <x> <y> <width> <height> ; range is (0,1)
+
 
 import datetime
 import logging
@@ -10,29 +15,12 @@ import time
 from tqdm import tqdm
 from multimethod import multimethod
 
+# Add the utils directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+import glog
+import LabelmeJson
 
-logger = logging.getLogger(__name__)
-
-def initLogger():
-    # Get the current date and time
-    now = datetime.datetime.now()
-    # Format the date and time as a string
-    formatted_date_time = now.strftime("%y%m%dT%H%M%S")
-    # Create the log file name
-    log_file_name = f"convertLbMe_2Yoloformat_{formatted_date_time}.log"
-    _ver = sys.version_info
-    kwargs = {
-        'filename': log_file_name,
-        'level': logging.DEBUG,
-        'format': '%(levelname).1s%(asctime)s %(filename)s:%(lineno)d] %(message)s',
-        'datefmt': '%Y%m%d %H:%M:%S'
-    }
-    
-    if _ver.minor >= 10:
-        kwargs['encoding'] = 'utf-8'
-    else:
-        print(f"WARNING: this Program develop in Python3.10.12, Current Version May has Problem in `pathlib.Path` to `str` convert.")
-    logging.basicConfig(**kwargs)
+logger = glog.glogger
 
 ###-------------------excel file operation
 import pandas 
@@ -489,10 +477,11 @@ class LabelmeFormat2YOLOFormat:
 
 
 def main_entrance():
-    initLogger()
     if len(sys.argv)<3:
         print(f"App ImageFolder spreadsheetFile.xls")
     else:
+        glog.glogger = glog.initLogger("gen301PX_yoloDS_fromLbmefmt")
+        
         imgfolder=pathlib.Path(sys.argv[1])
         if False == imgfolder.is_dir():
             print(f"Error: please confirm folder exist[{str(imgfolder)}]!!!")
