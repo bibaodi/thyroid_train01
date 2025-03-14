@@ -235,6 +235,12 @@ class LabelmeFormat2YOLOFormat:
 
     @staticmethod
     def rectFromPixelToYoloFormat_CenterXYWH_inPercent(rectInPos:list, imgWidth:int, imgHeight:int):
+        """
+        input a rectangle in list of points(x,y);
+        output:
+            1. a rectangle in list of points(topleft.xp, toplet.yp, w.xp, h.yp)
+            2. Empty list if failed
+        """
         yoloRect=[]
         if type(rectInPos) is not list or len(rectInPos) !=4:
             logger.error(f"Err: input rect Err:{rectInPos}")
@@ -261,6 +267,27 @@ class LabelmeFormat2YOLOFormat:
         yoloRect=[rectCxp, rectCyp, rectWp, rectHp]
         return yoloRect
     
+    @staticmethod
+    def contourPointsPixelToYoloFormat_inPercent(contourInPos:list, imgWidth:int, imgHeight:int):
+        """
+        input a polygon in list of  points(x,y) [[x,y], [x,y],...];
+        output: list of points from pixel to percentage [x1,y1, x2,y2,...];
+        """
+        yoloPercentList=[]
+        if type(contourInPos) is not list or len(contourInPos) <3:
+            logger.error(f"Err: input not enough 3 pt Err:{contourInPos}")
+            return yoloPercentList
+        for coord in contourInPos:
+            if coord[0] > imgWidth or coord[1] > imgHeight:
+                logger.error(f"Err: input rect coordinate not in range:{contourInPos}, {imgWidth}, {imgHeight}")
+                return yoloPercentList
+
+        for pt in contourInPos:
+            Xp = pt[0] / imgWidth #x
+            Yp = pt[1] / imgHeight #y
+            yoloPercentList.append(Xp)
+            yoloPercentList.append(Yp)
+        return yoloPercentList
 
     @staticmethod
     def polygonToRectangle(polygonPts:list):
@@ -339,6 +366,7 @@ class LabelmeFormat2YOLOFormat:
             3. save rectangles in YOLO format;
             4. all files in one folder, no sub-folder is supported.
             eton@250104
+            support detect and segment task. eton@250314;
         """
         if type(json_file) is str:
             json_file=pathlib.Path(json_file)
@@ -383,18 +411,26 @@ class LabelmeFormat2YOLOFormat:
                 logger.error(f"\tErr:{json_file}_shape[{ishape}] has point in shape less then {leastPointCount}>{pointCntInShape}.")
                 return -1
             #print(f"polygon[{lbm_classInOneShape}] is:{lbm_pointsInOneShape}")
-            #01 polygon to rectangle;
-            shape_rect = LabelmeFormat2YOLOFormat.polygonToRectangle(lbm_pointsInOneShape)
+            if self.isDetectTask():
+                #01 polygon to rectangle;
+                yoloObjShape = LabelmeFormat2YOLOFormat.polygonToRectangle(lbm_pointsInOneShape)
+            elif self.isSegmentTask():
+                yoloObjShape=lbm_pointsInOneShape
             #02 show in image
             debug_this=False
             if type(debug_this) is not None and debug_this:
-                ImageOperation.showRectInImg(image_file, shape_rect, lbm_pointsInOneShape)
+                if self.isDetectTask():
+                    ImageOperation.showRectInImg(image_file, yoloObjShape, lbm_pointsInOneShape) 
+            
             #03 rectangle to YOLO
             image_op_start = time.time()
             imgW, imgH = ImageOperation.getImageSizeWithoutReadWholeContents(image_file)
             image_op_end = time.time()
             logging.info(f"performance: Image operation took {image_op_end - image_op_start:.4f} seconds")
-            shape_yolorect=LabelmeFormat2YOLOFormat.rectFromPixelToYoloFormat_CenterXYWH_inPercent(shape_rect, imgW, imgH)
+            if self.isDetectTask():
+                yoloObjShape1d=LabelmeFormat2YOLOFormat.rectFromPixelToYoloFormat_CenterXYWH_inPercent(yoloObjShape, imgW, imgH)
+            else:
+                yoloObjShape1d=LabelmeFormat2YOLOFormat.contourPointsPixelToYoloFormat_inPercent(yoloObjShape, imgW, imgH)
             #03.2-add class to label
             noSpreadSheet=False
             for key, value in kwargs.items():
@@ -428,9 +464,9 @@ class LabelmeFormat2YOLOFormat:
                 else:
                     logger.error(f"Err: No matched folder name for BenignMalign3Class:{imagefolder}")
                 logger.info(f"BenignMalign3Class={BenignMalign3Class}") 
-            shape_yolorect.insert(0, BenignMalign3Class)
+            yoloObjShape1d.insert(0, BenignMalign3Class)
             
-            allRects.append(shape_yolorect)
+            allRects.append(yoloObjShape1d)
             #print(f"debug: shape_rect={shape_rect}, shape_yolorect={shape_yolorect}")
 
             #04 save image and Yolo.txt to new folder
