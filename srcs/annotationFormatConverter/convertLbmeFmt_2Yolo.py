@@ -7,11 +7,13 @@
 # yolo-segment: <class-index> <x1> <y1> <x2> <y2> ... <xn> <yn> ; range is (0,1)
 # yolo-detect: <class-index> <x> <y> <width> <height> ; range is (0,1)
 
-
+import typing
+import sys
+import json
+import os
 import datetime
 import logging
 import time
-
 from tqdm import tqdm
 from multimethod import multimethod
 
@@ -19,7 +21,7 @@ from multimethod import multimethod
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
 import glog
 import LabelmeJson
-
+from TaskTypeDefine import TaskTypes as TaskType
 logger = glog.glogger
 
 ###-------------------excel file operation
@@ -131,9 +133,6 @@ class GetInfoFromExternalSpreadSheetFile:
         logger.info(f"matchedTR={matchedTRs}, {matchedTRi}")
 
 ###--------excel file operation.end
-import sys
-import json
-import os
 import pathlib
 import shutil
 import numpy as np
@@ -212,8 +211,12 @@ class ImageOperation:
         plt.imshow(img)
 
 class LabelmeFormat2YOLOFormat:
-    def __init__(self, outputYoloPath:pathlib.Path , exlfile:pathlib.Path, sheetName:str, selectColName:str, outputColName:str):
-        self.outputYoloPath=outputYoloPath
+    static_taskType_detect=TaskType.Detect
+    static_taskType_segment=TaskType.Segment
+    static_taskType_unsupport=TaskType.UNKNOWN
+    def __init__(self, taskType:TaskType , exlfile:pathlib.Path, sheetName:str, selectColName:str, outputColName:str):
+        self.outputYoloPath=None
+        self.taskType = taskType
         self.exlfile=exlfile if isinstance(exlfile, pathlib.Path) else pathlib.Path(exlfile)
         self.sheetName=sheetName
         self.selectColName=selectColName
@@ -223,6 +226,12 @@ class LabelmeFormat2YOLOFormat:
         else:
             logger.error(f"Err: exlfile not exist:{exlfile}, make reader as None.")
             self.spreadSheetReader = None
+
+    def isDetectTask(self):
+        return self.taskType == self.static_taskType_detect
+    
+    def isSegmentTask(self):
+        return self.taskType == self.static_taskType_segment
 
     @staticmethod
     def rectFromPixelToYoloFormat_CenterXYWH_inPercent(rectInPos:list, imgWidth:int, imgHeight:int):
@@ -447,7 +456,7 @@ class LabelmeFormat2YOLOFormat:
             logger.info("Err: json file not found in casefolder:{casepath}")
             return -1
         
-        for ijsonpath in jsons:
+        for ijsonpath in tqdm(jsons, desc="processing Jsons:"):
             ret  = self.parseXiaobaoJson(ijsonpath, noSpreadSheet= True)
             logger.info(f"debug: process [{ijsonpath}], ret={ret}")
             if ret <0:
@@ -455,8 +464,20 @@ class LabelmeFormat2YOLOFormat:
             
         return 0
 
-    def process_multiPACScases(self, casesFolder):
-        working_dir=pathlib.Path(casesFolder)
+    def process_multiPACScases(self, casesFolder:typing.Union[str|pathlib.Path]):
+        if type(casesFolder) is str:
+            casesFolder=pathlib.Path(casesFolder)
+        working_dir=casesFolder
+
+        if self.isSegmentTask():
+            outputYoloPath=working_dir.with_suffix('.ylSegBoM')
+        elif self.isDetectTask():
+            outputYoloPath=working_dir.with_suffix('.ylDetectBoM')
+        else:
+            logger.error(f"Err: not support task type:{self.taskType}")
+            return -1
+        self.outputYoloPath=outputYoloPath
+
         casefolders = working_dir.iterdir()
 
         for icase in tqdm(casefolders, desc="PACS LabelmeFormat Converting2YOLO:"):
@@ -478,22 +499,28 @@ class LabelmeFormat2YOLOFormat:
 
 def main_entrance():
     if len(sys.argv)<3:
-        print(f"App ImageFolder spreadsheetFile.xls")
+        print(f"App ImageFolder taskType spreadsheetFile.xls")
     else:
         glog.glogger = glog.initLogger("gen301PX_yoloDS_fromLbmefmt")
-        
+        global logger
+        logger = glog.glogger
         imgfolder=pathlib.Path(sys.argv[1])
         if False == imgfolder.is_dir():
             print(f"Error: please confirm folder exist[{str(imgfolder)}]!!!")
             return -1
-        logger.info(f"Processing:{imgfolder}...")
+        glog.glogger.info(f"Processing:{imgfolder}...")
 
-        exlfile= sys.argv[2] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
+        taskType=sys.argv[2]
+        if taskType == "segment":
+            taskType=LabelmeFormat2YOLOFormat.static_taskType_segment
+        elif taskType == "detect":
+            taskType=LabelmeFormat2YOLOFormat.static_taskType_detect
+        exlfile= sys.argv[3] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
         selectColName='access_no'
         outputColName=u'bom' #'ti_rads'#u'bom' 
         sheetName="origintable"
-        outputYoloPath=imgfolder.with_suffix('.yoloBoM')
-        fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
+        
+        fmtConverter=LabelmeFormat2YOLOFormat(taskType, exlfile, sheetName,selectColName, outputColName)
         fmtConverter.process_multiPACScases(imgfolder)
 
 def test_it():
@@ -506,9 +533,9 @@ def test_it():
     outputColName=u'ti_rads'
     sheetName="origintable"
 
-    outputYoloPath=imgfolder.with_suffix('.yolofmt')
-    fmtConverter=LabelmeFormat2YOLOFormat(outputYoloPath, exlfile, sheetName,selectColName, outputColName)
-    fmtConverter.process_multiPACScases( imgfolder)
+    #outputYoloPath=imgfolder.with_suffix('.yolofmt')
+    fmtConverter=LabelmeFormat2YOLOFormat(LabelmeFormat2YOLOFormat.static_taskType_detect, exlfile, sheetName,selectColName, outputColName)
+    fmtConverter.process_multiPACScases( rootFolder)
 
 
 if __name__ == "__main__":
