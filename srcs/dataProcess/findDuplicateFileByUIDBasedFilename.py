@@ -34,6 +34,9 @@ def compute_file_hash(file_path: str) -> str:
     except (IOError, PermissionError) as error:
         logging.error(f"File read error: {file_path} - {error}")
         raise
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+from core_utils import validate_paths, recursive_file_search
 
 class DuplicateFileFinder:
     def __init__(self, source_dir: str, reference_dir: str, 
@@ -98,6 +101,12 @@ class DuplicateFileFinder:
         except IOError as e:
             logging.error(f"Failed to write output: {e}")
 
+    def _get_file_key(self, file_path: str, filename: str) -> Union[str, bytes]:
+        """Unified method to get file key based on match method"""
+        if self.match_method == "content":
+            return compute_file_hash(file_path)
+        return os.path.splitext(filename)[0].lower()
+
     def _create_file_index(self, directory_path: str) -> Dict[Union[str, bytes], List[str]]:
         """Build file index for a directory"""
         file_index: Dict[Union[str, bytes], List[str]] = {}
@@ -116,11 +125,7 @@ class DuplicateFileFinder:
                 relative_path = os.path.relpath(file_path, parent_dir)
                 
                 try:
-                    index_key = (
-                        compute_file_hash(file_path) 
-                        if self.match_method == "content" 
-                        else os.path.splitext(filename)[0].lower()
-                    )
+                    index_key = self._get_file_key(file_path, filename)
                     file_index.setdefault(index_key, []).append(relative_path)
                 except Exception as error:
                     logging.warning(f"Skipping unreadable file {file_path}: {error}")
@@ -144,11 +149,7 @@ class DuplicateFileFinder:
                 rel_path = os.path.relpath(file_path, parent_dir)
                 
                 try:
-                    search_key = (
-                        compute_file_hash(file_path) 
-                        if self.match_method == "content" 
-                        else os.path.splitext(filename)[0].lower()
-                    )
+                    search_key = self._get_file_key(file_path, filename)
                     
                     if search_key in self.reference_index:
                         matches.extend(
