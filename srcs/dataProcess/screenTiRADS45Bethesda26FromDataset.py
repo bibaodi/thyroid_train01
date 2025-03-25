@@ -2,8 +2,8 @@
 
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
-import SpreadSheetChecker
-import findDuplicateFileByUIDBasedFilename
+from SpreadSheetChecker import SpreadSheetChecker 
+from findDuplicateFileByUIDBasedFilename import DuplicateFileFinder 
 import glog
 #from  glog import glogger as glog.glogger
 glog.glogger = None#glog.glogger
@@ -43,7 +43,7 @@ def getSpreadSheetChecker(
         if not spreadsheet_path.is_file():
             raise ValueError(f"Invalid spreadsheet path: {spreadsheet_path}")
     
-    sschecker = SpreadSheetChecker.SpreadSheetChecker(spreadsheet_path, sheet_name, columns, primary_key)
+    sschecker = SpreadSheetChecker(spreadsheet_path, sheet_name, columns, primary_key)
     # Initialize sschecker
     # sschecker = SpreadSheetChecker(
     #     file_path="2223multi_nodule_45434.xlsx",
@@ -61,7 +61,7 @@ def main_screenTirads45Bethesda26():
         glog.get_logger().error(f"Spreadsheet file not found: {args.spreadsheet}")
         return
 
-    finder = findDuplicateFileByUIDBasedFilename.DuplicateFileFinder(
+    finder = DuplicateFileFinder(
         args.source_dir,
         args.reference_dir,
         args.output,

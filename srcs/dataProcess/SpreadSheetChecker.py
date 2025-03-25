@@ -11,7 +11,6 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Union
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class SpreadSheetChecker:
     def __init__(self, file_path: Union[str,Path], sheet_name: str, 
@@ -107,4 +106,6 @@ def test():
         print("Initialization failed")
 
 if "__main__" == __name__:
+    # move from top to here will avoid log override when others file import  classes from this file;
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     test()

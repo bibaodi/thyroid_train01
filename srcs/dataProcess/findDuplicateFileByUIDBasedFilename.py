@@ -13,12 +13,7 @@ import hashlib
 import logging
 from typing import Dict, List, Union, Optional
 
-# Configure logging
-# Update logging format to include line numbers
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s-%(levelname)s[LINE:%(lineno)d]-%(message)s'
-)
+
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}
 HASH_CHUNK_SIZE = 8192  # For file hashing
@@ -185,6 +180,12 @@ def main():
     
 if __name__ == '__main__':
     try:
+    # Configure logging
+    # Update logging format to include line numbers
+        logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s-%(levelname)s[LINE:%(lineno)d]-%(message)s') # move from top to here will avoid log override when others file import  classes from this file;
+
         main()
     except KeyboardInterrupt:
         logging.info("Operation cancelled by user")
