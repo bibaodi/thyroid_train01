@@ -14,7 +14,7 @@ from typing import Optional, Dict, Union
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class SpreadSheetChecker:
-    def __init__(self, file_path: str, sheet_name: str, 
+    def __init__(self, file_path: Union[str,Path], sheet_name: str, 
                  columns: list, primary_key: str):
         self.file_path = file_path
         self.sheet_name = sheet_name
