@@ -11,7 +11,7 @@ class DatasetOrganizer:
     
     def _read_csv_mapping(self):
         """Read CSV into memory and create UID to bethesda mapping"""
-        df = pd.read_csv(self.c1_csv)
+        df = pd.read_csv(self.metadata_csv)
         return df.set_index('UID')['bethesda'].to_dict()
     
     def _get_target_dir(self, bethesda):
@@ -29,7 +29,7 @@ class DatasetOrganizer:
             os.makedirs(dir_path, exist_ok=True)
 
         # Walk through all files in input directory
-        for root, _, files in os.walk(self.a1_root):
+        for root, _, files in os.walk(self.input_root):
             for file in files:
                 self._process_single_file(root, file)
     
@@ -37,9 +37,10 @@ class DatasetOrganizer:
         """Process individual file"""
         file_path = os.path.join(root, file)
         base_name = os.path.splitext(file)[0]
-        
+        #02.202312250193.01.21446.0005.08053200704_crop-enlarged-crop --> remove '-enlarged-crop'
+        matchStr = base_name.split('-')[0] if '-' in base_name else base_name
         try:
-            bethesda = self.uid_map[base_name]
+            bethesda = self.uid_map[matchStr]
             if target_dir := self._get_target_dir(bethesda):
                 shutil.copy2(file_path, os.path.join(target_dir, file))
         except KeyError:
