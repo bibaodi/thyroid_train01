@@ -85,7 +85,7 @@ def generate_dataset(output_file: str, image_index: Dict[str, str],
     counts = {k: 0 for k in target_counts}
     
     with open(output_file, 'w') as f:
-        f.write("FilePath,TiRADS\n")
+        f.write("ImageName,TiRADS\n")
         
         for uid, file_path in image_index.items():
             file_path = pathlib.Path(file_path)
