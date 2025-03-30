@@ -65,8 +65,8 @@ class DatasetOrganizer:
         #02.202312250193.01.21446.0005.08053200704_crop-enlarged-crop --> remove '-enlarged-crop'
         matchStr = base_name.split('-')[0] if '-' in base_name else base_name
         try:
-            bethesda = self.m_uid_map[matchStr]
-            if target_dir := self._get_target_dir(bethesda):
+            itemCls = self.m_uid_map[matchStr]
+            if target_dir := self._get_target_dir(itemCls):
                 shutil.copy2(file_path, os.path.join(target_dir, file))
         except KeyError:
             print(f"Warning: No CSV entry found for {base_name}")
