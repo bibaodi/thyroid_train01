@@ -37,21 +37,31 @@ class DatasetOrganizer:
         """Read CSV into memory and create UID to bethesda mapping"""
         df = pd.read_csv(self.m_metadata_csv)
         if self._isClsCategoryBethesda():
-            # Add Bethesda statistics
+            # Check and handle UID duplicates
+            dup_count = df.duplicated(subset=['UID']).sum()
+            if dup_count > 0:
+                print(f"\nFound {dup_count} duplicate UIDs. Keeping first occurrence.")
+                df = df.drop_duplicates(subset=['UID'], keep='first')
+            
             bethesda_counts = df['bethesda'].value_counts().sort_index()
             print("\nBethesda Category Counts:")
             for value, count in bethesda_counts.items():
                 print(f"Bethesda {int(value)}: {count} cases")
-            print(f"Total Cases: {len(df)}\n")
+            print(f"Unique Cases: {len(df)}\n")
             
             return df.set_index('UID')['bethesda'].to_dict()
         elif self._isClsCategoryTIRADS():
-            # Add TiRADS statistics
+            # Check and handle ImageName duplicates
+            dup_count = df.duplicated(subset=['ImageName']).sum()
+            if dup_count > 0:
+                print(f"\nFound {dup_count} duplicate ImageNames. Keeping first occurrence.")
+                df = df.drop_duplicates(subset=['ImageName'], keep='first')
+            
             tirads_counts = df['TiRADS'].value_counts().sort_index()
             print("\nTiRADS Category Counts:")
             for value, count in tirads_counts.items():
                 print(f"TiRADS {int(value)}: {count} cases")
-            print(f"Total Cases: {len(df)}\n")
+            print(f"Unique Cases: {len(df)}\n")
             
             return df.set_index('ImageName')['TiRADS'].to_dict()
 
