@@ -111,7 +111,7 @@ class DatasetOrganizer:
             if target_dir := self._get_target_dir(itemCls):
                 shutil.copy2(file_path, os.path.join(target_dir, file))
         except KeyError:
-            print(f"Warning: No CSV entry found for {base_name}")
+            print(f"Warning: No CSV entry found for basename:{matchStr}")
         except Exception as e:
             print(f"Error processing {file_path}: {str(e)}")
 
