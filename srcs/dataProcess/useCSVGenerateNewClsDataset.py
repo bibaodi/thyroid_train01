@@ -14,6 +14,7 @@ class DatasetOrganizer:
     CATEGORY_MAPPINGS = {
         'bethesda26': {2: '2Benign', 6: '6Malign'},
         'tirads15': {1: 'TR1', 2: 'TR2', 3: 'TR3', 4: 'TR4', 5: 'TR5'}
+        'echoGenicity':{'ISOECHO': '0ISOECHO', 'HPRECHO': '1HPRECHO', 'HPOECHO': '2HPOECHO', 'MHYECHO': '3MHYECHO'}
     }
 
     def __init__(self, input_root, metadata_csv, output_root, classify_category='bethesda26'):
@@ -32,6 +33,9 @@ class DatasetOrganizer:
     
     def _isClsCategoryTIRADS(self):
         return self.m_classify_category == 'tirads15'
+    
+    def _isClsCategoryEchoGenicity(self):
+        return self.m_classify_category == 'echoGenicity'
 
     def _read_csv_mapping(self):
         """Read CSV into memory and create UID to bethesda mapping"""
@@ -64,6 +68,20 @@ class DatasetOrganizer:
             print(f"Unique Cases: {len(df)}\n")
             
             return df.set_index('ImageName')['TiRADS'].to_dict()
+        elif self._isClsCategoryEchoGenicity():
+            # Check and handle ImageName duplicates
+            dup_count = df.duplicated(subset=['ImageName']).sum()
+            if dup_count > 0:
+                print(f"\nFound {dup_count} duplicate ImageNames. Keeping first occurrence.")
+                df = df.drop_duplicates(subset=['ImageName'], keep='first')
+            
+            dataLabel_counts = df['DataLabel'].value_counts().sort_index()
+            print("\nDataLabel Category Counts:")
+            for value, count in dataLabel_counts.items():
+                print(f"DataLabel [{value}]: {count} cases")
+            print(f"Unique Cases: {len(df)}\n")
+            
+            return df.set_index('ImageName')['DataLabel'].to_dict()
 
     def _get_target_dir(self, category_value):
         """Determine target directory based on category value"""
@@ -103,7 +121,7 @@ def main():
     parser.add_argument('-i', '--input_root', required=True, help='Root directory of input dataset')
     parser.add_argument('-m', '--metadata_csv', required=True, help='CSV file containing metadata')
     parser.add_argument('-o', '--output_root', required=True, help='Root directory for organized output')
-    parser.add_argument('-c', '--classify_category', default='bethesda26',
+    parser.add_argument('-c', '--classify_category', default='echoGenicity',
                       choices=DatasetOrganizer.CATEGORY_MAPPINGS.keys(),
                       help='Classification category to use')
     args = parser.parse_args()
