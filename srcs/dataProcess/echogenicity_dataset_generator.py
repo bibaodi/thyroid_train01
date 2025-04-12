@@ -8,7 +8,12 @@ import glog
 from typing import Dict, Set, List
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff'}
-
+EchoGenicityNameMapper = {
+            u'等回声': 'ISOECHO',
+            u'高回声': 'HPRECHO',
+            u'低回声': 'HPOECHO',
+            u'极低回声': 'MHYECHO',
+        }
 def generate_image_index(root_folder: str) -> Dict[str, str]:
     """Generate image base name index with full paths"""
     file_index = {}
@@ -33,6 +38,7 @@ class ImageLabelChecker:
         self.m_datalabel_col = dataLabel_column.lower()
         
         self.m_idLabel_map = self._create_dataIdLabel_mapping()
+        self.m_echoGenicityNameMapper = EchoGenicityNameMapper
         glog.get_logger().info(f"Loaded {len(self.m_idLabel_map)} Data entries")
 
     def _validate_inputs(self, path: str, sheet: str, columns: List[str]):
@@ -46,7 +52,11 @@ class ImageLabelChecker:
             self.m_df[self.m_dataid_col].str.lower()
         )[self.m_datalabel_col].to_dict()
 
-    def get_label_value(self, uid: str) -> str:
+    def _labelName_to_abbreviation(self, label_name: str) -> str:
+        """Convert label name to abbreviation"""
+        return self.m_echoGenicityNameMapper.get(label_name, 'NotFound')
+        
+    def get_label_value(self, uid: str, useRawValue=False) -> str:
         """Get the label value for a given ID"""
         notfound = "notfound"
         try:
@@ -54,7 +64,10 @@ class ImageLabelChecker:
             if (isinstance(notfound, str) and notfound == label_value) or ( isinstance(label_value, float) and pd.isna(label_value)):
                 glog.get_logger().warning(f"NotFound/NaN value found for UID: {uid}")
                 return notfound
-            return label_value  # Handle float-formatted integers
+            if useRawValue:
+                return label_value
+            else:
+                return self._labelName_to_abbreviation(label_value)  # Handle float-formatted integers
         except (ValueError, TypeError) as e:
             glog.get_logger().warning(f"Invalid DataLabel value for UID {uid}: {str(e)}")
             return notfound
@@ -89,6 +102,7 @@ class BlockListChecker:
 def generate_dataset(output_file: str, image_index: Dict[str, str], 
                    tirads_checker: ImageLabelChecker, block_checker: BlockListChecker,
                    target_counts: Dict[int, int]):
+    
     counts = {k: 0 for k in target_counts}
     
     with open(output_file, 'w') as f:
@@ -111,17 +125,42 @@ def generate_dataset(output_file: str, image_index: Dict[str, str],
                 counts[item_label] += 1
                 glog.get_logger().info(f"Added {uid} (DataLabel {item_label})")
                 
-    glog.get_logger().info("Dataset generation completed")
+    glog.get_logger().info("Dataset generation completed.")
     glog.get_logger().info(f"Final counts: {counts}")
+
+def validate_input_parameters(args: argparse.Namespace):
+    """Validate all input paths before main processing"""
+    image_root = pathlib.Path(args.image_root)
+    if not image_root.exists() or not image_root.is_dir():
+        glog.get_logger().error(f"Image root directory not found: {args.image_root}")
+        raise SystemExit(1)
+    
+    spreadsheet_path = pathlib.Path(args.img_info_sheet)
+    if not spreadsheet_path.exists() or not spreadsheet_path.is_file():
+        glog.get_logger().error(f"Input spreadsheet not found: {args.img_info_sheet}")
+        raise SystemExit(1)
+
+    blocklist_path = pathlib.Path(args.block_items_sheet)
+    if not blocklist_path.exists() or not blocklist_path.is_file():
+        glog.get_logger().error(f"Block list spreadsheet not found: {args.block_items_sheet}")
+    return True 
 
 def main_generateTiradsDataset():
     parser = argparse.ArgumentParser(description='DataLabel Dataset Generator')
-    parser.add_argument('image_root', help='Root directory containing medical images')
-    parser.add_argument('img_info_sheet', help='Path to DataLabel spreadsheet')
-    parser.add_argument('block_items_sheet', help='Path to block list spreadsheet')
+    # Changed positional arguments to required keyword arguments
+    parser.add_argument('-i', '--image-root', required=True, help='Root directory containing medical images')
+    parser.add_argument('-s', '--img-info-sheet', required=True, help='Path to DataLabel spreadsheet')
+    parser.add_argument('-b', '--block-items-sheet', required=True, help='Path to block list spreadsheet')
     parser.add_argument('-o', '--output', default='echoGenicity_v1.250412.csv', 
                       help='Output CSV file path')
     args = parser.parse_args()
+
+    # Validate inputs before main logic
+    validate_input_parameters(args)
+    
+    # Create output directory if needed (kept here as it's output-related)
+    output_path = pathlib.Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
         # Initialize all components
@@ -139,8 +178,15 @@ def main_generateTiradsDataset():
             u'低回声': everyTypeCount,
             u'极低回声': everyTypeCount,
         }
+        # Convert to the new name mapping
+        target_counts ={
+            'ISOECHO': everyTypeCount,
+            'HPRECHO': everyTypeCount,
+            'HPOECHO': everyTypeCount,
+            'MHYECHO': everyTypeCount,
+        }
         label_keys = list(target_counts.keys())
-        alreadyAppendCount=[0,0,0,0,0]
+        alreadyAppendCount=[500,192,500,378,0]
         for itck, itcv in target_counts.items():
             itemIdx = label_keys.index(itck)
             target_counts[itck]=itcv-alreadyAppendCount[itemIdx]
