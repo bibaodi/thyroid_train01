@@ -13,7 +13,7 @@ import pandas as pd
 class DatasetOrganizer:
     CATEGORY_MAPPINGS = {
         'bethesda26': {2: '2Benign', 6: '6Malign'},
-        'tirads15': {1: 'TR1', 2: 'TR2', 3: 'TR3', 4: 'TR4', 5: 'TR5'}
+        'tirads15': {1: 'TR1', 2: 'TR2', 3: 'TR3', 4: 'TR4', 5: 'TR5'},
         'echoGenicity':{'ISOECHO': '0ISOECHO', 'HPRECHO': '1HPRECHO', 'HPOECHO': '2HPOECHO', 'MHYECHO': '3MHYECHO'}
     }
 
