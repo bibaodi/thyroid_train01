@@ -37,21 +37,37 @@ def merge_csv_files(file1, file2, key_column, output_file):
         # Combine and deduplicate
         combined = pd.concat([df1, df2])
         combined.drop_duplicates(subset=[key_column], keep='first', inplace=True)
+        # Save result
+        combined.to_csv(output_file, index=False)
+
 
         # Generate final counts
         final_count = len(combined)
         duplicates_removed = total_before - final_count
 
-        # Save result
-        combined.to_csv(output_file, index=False)
-        
+        # Generate class statistics helper function
+        def get_class_stats(df, name):
+            if 'DataLabel' in df.columns:
+                counts = df['DataLabel'].value_counts()
+                return "\n".join([f"  - {cls}: {count} items" 
+                                for cls, count in counts.items()])
+            return f"No 'DataLabel' column found in {name}"
+
+        # Generate report statistics
+        orig_stats1 = get_class_stats(df1, Path(file1).name)
+        orig_stats2 = get_class_stats(df2, Path(file2).name)
+        final_stats = get_class_stats(combined, "merged result")
+
         # Print merge report
         print(f"Merge Report:\n"
               f"- Original items in {Path(file1).name}: {orig_count1}\n"
+              f"  Class distribution:\n{orig_stats1}\n"
               f"- Original items in {Path(file2).name}: {orig_count2}\n"
+              f"  Class distribution:\n{orig_stats2}\n"
               f"- Total items before merge: {total_before}\n"
               f"- Final items after deduplication: {final_count}\n"
               f"- Duplicates removed: {duplicates_removed}\n"
+              f"- Merged class distribution:\n{final_stats}\n"
               f"Output saved to: {output_file}")
 
     except Exception as e:
