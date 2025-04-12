@@ -1,0 +1,158 @@
+import os
+import argparse
+import pathlib
+import pandas as pd
+import os, sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../utils')))
+import glog
+from typing import Dict, Set, List
+
+IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff'}
+
+def generate_image_index(root_folder: str) -> Dict[str, str]:
+    """Generate image base name index with full paths"""
+    file_index = {}
+    abs_root = pathlib.Path(root_folder).resolve()
+    
+    for file_path in abs_root.rglob('*'):
+        if file_path.suffix.lower() in IMAGE_EXTENSIONS:
+            uid = file_path.stem.split('_')[0].lower()
+            file_index[uid] = str(file_path)
+    
+    glog.get_logger().info(f"Indexed {len(file_index)} images")
+    return file_index
+
+class ImageLabelChecker:
+    def __init__(self, spreadsheet_path: str, sheet_name: str, 
+                 dataID_column: str, dataLabel_column: str):
+        self._validate_inputs(spreadsheet_path, sheet_name, 
+                            [dataID_column, dataLabel_column])
+        
+        self.m_df = pd.read_excel(spreadsheet_path, sheet_name=sheet_name)
+        self.m_dataid_col = dataID_column.lower()
+        self.m_datalabel_col = dataLabel_column.lower()
+        
+        self.m_idLabel_map = self._create_dataIdLabel_mapping()
+        glog.get_logger().info(f"Loaded {len(self.m_idLabel_map)} Data entries")
+
+    def _validate_inputs(self, path: str, sheet: str, columns: List[str]):
+        if not pathlib.Path(path).exists():
+            raise FileNotFoundError(f"ImageLabelChecker Spreadsheet not found: {path}")
+        if not columns or any(not c for c in columns):
+            raise ValueError("ImageLabelChecker Invalid column names provided")
+
+    def _create_dataIdLabel_mapping(self) -> Dict[str, str]:
+        return self.m_df.set_index(
+            self.m_df[self.m_dataid_col].str.lower()
+        )[self.m_datalabel_col].to_dict()
+
+    def get_label_value(self, uid: str) -> str:
+        """Get the label value for a given ID"""
+        notfound = "notfound"
+        try:
+            label_value = self.m_idLabel_map.get(uid.lower(), "notfound")
+            if (isinstance(notfound, str) and notfound == label_value) or ( isinstance(label_value, float) and pd.isna(label_value)):
+                glog.get_logger().warning(f"NotFound/NaN value found for UID: {uid}")
+                return notfound
+            return label_value  # Handle float-formatted integers
+        except (ValueError, TypeError) as e:
+            glog.get_logger().warning(f"Invalid DataLabel value for UID {uid}: {str(e)}")
+            return notfound
+        except Exception as e:
+            glog.get_logger().error(f"Unexpected error processing UID {uid}: {str(e)}")
+            return notfound
+
+class BlockListChecker:
+    def __init__(self, spreadsheet_path: str, sheet_name: str, dataID_column: str):
+        self.m_df = None
+        self.m_dataid_col = None
+        self.blocked_uids = []
+        if self._validate_inputs(spreadsheet_path, sheet_name):
+            self.m_df = pd.read_excel(spreadsheet_path, sheet_name=sheet_name)
+            self.m_dataid_col = dataID_column.lower()
+            self.blocked_uids = self._load_blocked_uids()
+        glog.get_logger().info(f"Loaded {len(self.blocked_uids)} blocked UIDs")
+
+    def _validate_inputs(self, path: str, sheet: str):
+        if not pathlib.Path(path).exists():
+            glog.get_logger().error(FileNotFoundError(f"Block list not found: {path}"))
+            return False
+        return True
+
+    def _load_blocked_uids(self) -> Set[str]:
+        return set(self.m_df[self.m_dataid_col].str.lower().unique())
+
+    def is_blocked(self, uid: str) -> bool:
+        """Check if a UID is in the blocked list"""
+        return uid.lower() in self.blocked_uids
+
+def generate_dataset(output_file: str, image_index: Dict[str, str], 
+                   tirads_checker: ImageLabelChecker, block_checker: BlockListChecker,
+                   target_counts: Dict[int, int]):
+    counts = {k: 0 for k in target_counts}
+    
+    with open(output_file, 'w') as f:
+        f.write("ImageName,DataLabel\n")
+        
+        for uid, file_path in image_index.items():
+            file_path = pathlib.Path(file_path)
+            imageBasename = file_path.name
+            if block_checker.is_blocked(uid):
+                glog.get_logger().info(f"Blocked UID: {uid}")
+                continue
+                
+            item_label = tirads_checker.get_label_value(uid)
+            glog.get_logger().info(f"UID: {uid},  {imageBasename}, Label: {item_label}")
+            if item_label not in target_counts:
+                continue
+                
+            if counts[item_label] < target_counts[item_label]:
+                f.write(f"{imageBasename},{item_label}\n")
+                counts[item_label] += 1
+                glog.get_logger().info(f"Added {uid} (DataLabel {item_label})")
+                
+    glog.get_logger().info("Dataset generation completed")
+    glog.get_logger().info(f"Final counts: {counts}")
+
+def main_generateTiradsDataset():
+    parser = argparse.ArgumentParser(description='DataLabel Dataset Generator')
+    parser.add_argument('image_root', help='Root directory containing medical images')
+    parser.add_argument('img_info_sheet', help='Path to DataLabel spreadsheet')
+    parser.add_argument('block_items_sheet', help='Path to block list spreadsheet')
+    parser.add_argument('-o', '--output', default='echoGenicity_v1.250412.csv', 
+                      help='Output CSV file path')
+    args = parser.parse_args()
+
+    try:
+        # Initialize all components
+        image_index = generate_image_index(args.image_root)
+        tirads_checker = ImageLabelChecker(args.img_info_sheet, 'task_sop_0401_85784',
+                                      'sop_uid', 'std_echo')
+        block_checker = BlockListChecker(args.block_items_sheet, 
+                                        'verify_3000_tirads1_5', 'sop_uid')
+        
+        # Define target counts (example: adjust based on requirements)
+        everyTypeCount=500
+        target_counts = {
+            u'等回声': everyTypeCount,
+            u'高回声': everyTypeCount,
+            u'低回声': everyTypeCount,
+            u'极低回声': everyTypeCount,
+        }
+        label_keys = list(target_counts.keys())
+        alreadyAppendCount=[0,0,0,0,0]
+        for itck, itcv in target_counts.items():
+            itemIdx = label_keys.index(itck)
+            target_counts[itck]=itcv-alreadyAppendCount[itemIdx]
+        glog.get_logger().info(f" targets counnts={target_counts}")
+        
+        generate_dataset(args.output, image_index, tirads_checker,
+                        block_checker, target_counts)
+        
+    except Exception as e:
+        glog.get_logger().error(f"Failed to generate dataset: {str(e)}")
+        raise SystemExit(1) from e
+
+if __name__ == "__main__":
+    glog.glogger = glog.initLogger("echoGenicity4_dataset.log")
+    main_generateTiradsDataset()
