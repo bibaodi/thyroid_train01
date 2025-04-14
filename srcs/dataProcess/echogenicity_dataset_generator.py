@@ -151,7 +151,7 @@ def main_generateTiradsDataset():
     parser.add_argument('-i', '--image-root', required=True, help='Root directory containing medical images')
     parser.add_argument('-s', '--img-info-sheet', required=True, help='Path to DataLabel spreadsheet')
     parser.add_argument('-b', '--block-items-sheet', required=True, help='Path to block list spreadsheet')
-    parser.add_argument('-o', '--output', default='echoGenicity_v1.250412.csv', 
+    parser.add_argument('-o', '--output', default='echoGenicity_v01.250412.csv', 
                       help='Output CSV file path')
     args = parser.parse_args()
 
@@ -186,7 +186,7 @@ def main_generateTiradsDataset():
             'MHYECHO': everyTypeCount,
         }
         label_keys = list(target_counts.keys())
-        alreadyAppendCount=[500,192,500,378,0]
+        alreadyAppendCount=[0,0,0,0,0]
         for itck, itcv in target_counts.items():
             itemIdx = label_keys.index(itck)
             target_counts[itck]=itcv-alreadyAppendCount[itemIdx]
