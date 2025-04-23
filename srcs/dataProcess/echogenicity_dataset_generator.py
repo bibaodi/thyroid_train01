@@ -1,4 +1,13 @@
-import os
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Echogenicity Dataset Generator v0.2
+Author: Eton
+Created: 250423
+Filename: echogenicity_dataset_generator.py
+Description: Generates medical image datasets with echogenicity labels
+"""
+
 import argparse
 import pathlib
 import pandas as pd
@@ -7,13 +16,23 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../util
 import glog
 from typing import Dict, Set, List
 
+# Third-party imports
+sys.path.append(str(pathlib.Path(__file__).parent.parent/'utils'))
+import glog
+
+# --- Constants ---
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff'}
 EchoGenicityNameMapper = {
-            u'等回声': 'ISOECHO',
-            u'高回声': 'HPRECHO',
-            u'低回声': 'HPOECHO',
-            u'极低回声': 'MHYECHO',
-        }
+    u'等回声': 'ISOECHO',
+    u'高回声': 'HPRECHO',
+    u'低回声': 'HPOECHO',
+    u'极低回声': 'MHYECHO',
+    u'实性': 'SOLIDECHO',
+    u'囊实性': 'CYSTICSOLID',
+    u'囊性': 'CYSTICECHO',
+    u'海绵样': 'SPONGIFORM',
+}
+
 def generate_image_index(root_folder: str) -> Dict[str, str]:
     """Generate image base name index with full paths"""
     file_index = {}
@@ -55,7 +74,7 @@ class ImageLabelChecker:
     def _labelName_to_abbreviation(self, label_name: str) -> str:
         """Convert label name to abbreviation"""
         return self.m_echoGenicityNameMapper.get(label_name, 'NotFound')
-        
+
     def get_label_value(self, uid: str, useRawValue=False) -> str:
         """Get the label value for a given ID"""
         notfound = "notfound"
@@ -99,10 +118,13 @@ class BlockListChecker:
         """Check if a UID is in the blocked list"""
         return uid.lower() in self.blocked_uids
 
-def generate_dataset(output_file: str, image_index: Dict[str, str], 
-                   tirads_checker: ImageLabelChecker, block_checker: BlockListChecker,
-                   target_counts: Dict[int, int]):
-    
+def generate_dataset(
+    output_file: str,
+    image_index: Dict[str, str],
+    tirads_checker: ImageLabelChecker,
+    block_checker: BlockListChecker,
+    target_counts: Dict[int, int]
+):
     counts = {k: 0 for k in target_counts}
     
     with open(output_file, 'w') as f:
@@ -116,7 +138,7 @@ def generate_dataset(output_file: str, image_index: Dict[str, str],
                 continue
                 
             item_label = tirads_checker.get_label_value(uid)
-            glog.get_logger().info(f"UID: {uid},  {imageBasename}, Label: {item_label}")
+            glog.get_logger().info(f"UID: {uid}, {imageBasename}, Label: {item_label}")
             if item_label not in target_counts:
                 continue
                 
@@ -124,7 +146,7 @@ def generate_dataset(output_file: str, image_index: Dict[str, str],
                 f.write(f"{imageBasename},{item_label}\n")
                 counts[item_label] += 1
                 glog.get_logger().info(f"Added {uid} (DataLabel {item_label})")
-                
+    
     glog.get_logger().info("Dataset generation completed.")
     glog.get_logger().info(f"Final counts: {counts}")
 
@@ -151,7 +173,7 @@ def main_generateTiradsDataset():
     parser.add_argument('-i', '--image-root', required=True, help='Root directory containing medical images')
     parser.add_argument('-s', '--img-info-sheet', required=True, help='Path to DataLabel spreadsheet')
     parser.add_argument('-b', '--block-items-sheet', required=True, help='Path to block list spreadsheet')
-    parser.add_argument('-o', '--output', default='echoGenicity_v01.250412.csv', 
+    parser.add_argument('-o', '--output', default='echoComposition_v01.250423.csv', 
                       help='Output CSV file path')
     args = parser.parse_args()
 
@@ -165,25 +187,25 @@ def main_generateTiradsDataset():
     try:
         # Initialize all components
         image_index = generate_image_index(args.image_root)
-        tirads_checker = ImageLabelChecker(args.img_info_sheet, 'task_sop_0401_85784',
-                                      'sop_uid', 'std_echo')
+        tirads_checker = ImageLabelChecker(args.img_info_sheet, 'sop_0422',
+                                      'sop_uid', 'std_composition')
         block_checker = BlockListChecker(args.block_items_sheet, 
                                         'verify_3000_tirads1_5', 'sop_uid')
         
         # Define target counts (example: adjust based on requirements)
-        everyTypeCount=500
+        everyTypeCount=4610
         target_counts = {
-            u'等回声': everyTypeCount,
-            u'高回声': everyTypeCount,
-            u'低回声': everyTypeCount,
-            u'极低回声': everyTypeCount,
+            u'实性': everyTypeCount,
+            u'囊实性': everyTypeCount,
+            u'囊性': everyTypeCount,
+            u'海绵样': everyTypeCount,
         }
         # Convert to the new name mapping
-        target_counts ={
-            'ISOECHO': everyTypeCount,
-            'HPRECHO': everyTypeCount,
-            'HPOECHO': everyTypeCount,
-            'MHYECHO': everyTypeCount,
+        target_counts = {
+            'SOLIDECHO': everyTypeCount,
+            'CYSTICSOLID': everyTypeCount,
+            'CYSTICECHO': everyTypeCount,
+            'SPONGIFORM': everyTypeCount,
         }
         label_keys = list(target_counts.keys())
         alreadyAppendCount=[0,0,0,0,0]
@@ -200,5 +222,5 @@ def main_generateTiradsDataset():
         raise SystemExit(1) from e
 
 if __name__ == "__main__":
-    glog.glogger = glog.initLogger("echoGenicity4_dataset.log")
+    glog.glogger = glog.initLogger("echoComposition4_dataset.log")
     main_generateTiradsDataset()
