@@ -31,6 +31,10 @@ EchoGenicityNameMapper = {
     u'囊实性': 'CYSTICSOLID',
     u'囊性': 'CYSTICECHO',
     u'海绵样': 'SPONGIFORM',
+    u'不清': 'MARGILLDEFINED',
+    u'光滑': 'MARGCIRCUMSCRIBED',
+    u'不规则': 'MARGIRREGULAR',
+    u'外侵': 'MARGEXTRATHYR',
 }
 
 def generate_image_index(root_folder: str) -> Dict[str, str]:
@@ -188,24 +192,24 @@ def main_generateTiradsDataset():
         # Initialize all components
         image_index = generate_image_index(args.image_root)
         tirads_checker = ImageLabelChecker(args.img_info_sheet, 'sop_0422',
-                                      'sop_uid', 'std_composition')
+                                      'sop_uid', 'std_margin')
         block_checker = BlockListChecker(args.block_items_sheet, 
                                         'verify_3000_tirads1_5', 'sop_uid')
         
         # Define target counts (example: adjust based on requirements)
-        everyTypeCount=4610
+        everyTypeCount = 2000
         target_counts = {
-            u'实性': everyTypeCount,
-            u'囊实性': everyTypeCount,
-            u'囊性': everyTypeCount,
-            u'海绵样': everyTypeCount,
+            u'不清': everyTypeCount,
+            u'光滑': everyTypeCount,
+            u'不规则': everyTypeCount,
+            u'外侵': everyTypeCount,
         }
         # Convert to the new name mapping
         target_counts = {
-            'SOLIDECHO': everyTypeCount,
-            'CYSTICSOLID': everyTypeCount,
-            'CYSTICECHO': everyTypeCount,
-            'SPONGIFORM': everyTypeCount,
+            'MARGILLDEFINED': everyTypeCount,
+            'MARGCIRCUMSCRIBED': everyTypeCount,
+            'MARGIRREGULAR': everyTypeCount,
+            'MARGEXTRATHYR': everyTypeCount,
         }
         label_keys = list(target_counts.keys())
         alreadyAppendCount=[0,0,0,0,0]
