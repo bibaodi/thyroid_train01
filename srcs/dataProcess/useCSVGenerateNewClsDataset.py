@@ -16,6 +16,7 @@ class DatasetOrganizer:
         'tirads15': {1: 'TR1', 2: 'TR2', 3: 'TR3', 4: 'TR4', 5: 'TR5'},
         'echoGenicity':{'ISOECHO': '0ISOECHO', 'HPRECHO': '1HPRECHO', 'HPOECHO': '2HPOECHO', 'MHYECHO': '3MHYECHO'},
         'echoComposition':{'SOLIDECHO': '0SOLID', 'CYSTICSOLID': '1CYSOL', 'CYSTICECHO': '2CYSTIC', 'SPONGIFORM': '3SPONGI'},
+        'echoNoduleMargin':{'MARGILLDEFINED': '0MGILLD', 'MARGCIRCUMSCRIBED': '1MGCIRCU', 'MARGIRREGULAR': '2MGIRRE', 'MARGEXTRATHYR': '3MGEXTR'},
     }
 
     def __init__(self, input_root, metadata_csv, output_root, classify_category='bethesda26'):
@@ -40,6 +41,9 @@ class DatasetOrganizer:
     
     def _isClsCategoryEchoComposition(self):
         return self.m_classify_category == 'echoComposition'
+    
+    def _isClsCategoryEchoNoduleMargin(self):
+        return self.m_classify_category == 'echoNoduleMargin'
 
     def _read_csv_mapping(self):
         """Read CSV into memory and create UID to bethesda mapping"""
@@ -72,7 +76,9 @@ class DatasetOrganizer:
             print(f"Unique Cases: {len(df)}\n")
             
             return df.set_index('ImageName')['TiRADS'].to_dict()
-        elif self._isClsCategoryEchoGenicity() or self._isClsCategoryEchoComposition():
+        elif self._isClsCategoryEchoGenicity() or 
+            self._isClsCategoryEchoComposition() or 
+            self._isClsCategoryEchoNoduleMargin():
             # Check and handle ImageName duplicates
             dup_count = df.duplicated(subset=['ImageName']).sum()
             if dup_count > 0:
