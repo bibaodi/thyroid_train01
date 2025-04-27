@@ -35,6 +35,12 @@ EchoGenicityNameMapper = {
     u'光滑': 'MARGCIRCUMSCRIBED',
     u'不规则': 'MARGIRREGULAR',
     u'外侵': 'MARGEXTRATHYR',
+    u'点状强回声': 'FOCI_PUNCTATEECHOGENICITY',
+    u'粗大钙化': 'FOCI_MACROCALCIFICATION',
+    u'粗大钙化,点状强回声': 'FOCI_MACROCALCIFICATION',
+    u'粗大钙化,边缘钙化': 'FOCI_MACROCALCIFICATION',
+    u'边缘钙化': 'FOCI_PERIPHERALCALCIFICATION',
+    U'边缘钙化,点状强回声': 'FOCI_PERIPHERALCALCIFICATION',
 }
 
 def generate_image_index(root_folder: str) -> Dict[str, str]:
@@ -192,24 +198,18 @@ def main_generateTiradsDataset():
         # Initialize all components
         image_index = generate_image_index(args.image_root)
         tirads_checker = ImageLabelChecker(args.img_info_sheet, 'sop_0422',
-                                      'sop_uid', 'std_margin')
+                                      'sop_uid', 'std_foci')
         block_checker = BlockListChecker(args.block_items_sheet, 
                                         'verify_3000_tirads1_5', 'sop_uid')
         
         # Define target counts (example: adjust based on requirements)
-        everyTypeCount = 2000
-        target_counts = {
-            u'不清': everyTypeCount,
-            u'光滑': everyTypeCount,
-            u'不规则': everyTypeCount,
-            u'外侵': everyTypeCount,
-        }
+        everyTypeCount = 600
+
         # Convert to the new name mapping
         target_counts = {
-            'MARGILLDEFINED': everyTypeCount,
-            'MARGCIRCUMSCRIBED': everyTypeCount,
-            'MARGIRREGULAR': everyTypeCount,
-            'MARGEXTRATHYR': everyTypeCount,
+            'FOCI_PUNCTATEECHOGENICITY': everyTypeCount,
+            'FOCI_MACROCALCIFICATION': everyTypeCount,
+            'FOCI_PERIPHERALCALCIFICATION': everyTypeCount,
         }
         label_keys = list(target_counts.keys())
         alreadyAppendCount=[0,0,0,0,0]
