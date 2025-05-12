@@ -41,6 +41,8 @@ EchoGenicityNameMapper = {
     u'粗大钙化,边缘钙化': 'FOCI_MACROCALCIFICATION',
     u'边缘钙化': 'FOCI_PERIPHERALCALCIFICATION',
     U'边缘钙化,点状强回声': 'FOCI_PERIPHERALCALCIFICATION',
+    u'nan': 'FOCI_NOTEXIST',
+    float('nan'): 'FOCI_NOTEXIST',
 }
 
 def generate_image_index(root_folder: str) -> Dict[str, str]:
@@ -88,14 +90,18 @@ class ImageLabelChecker:
     def get_label_value(self, uid: str, useRawValue=False) -> str:
         """Get the label value for a given ID"""
         notfound = "notfound"
+        dictKeyNotFound = "UIDnotfound"
         try:
-            label_value = self.m_idLabel_map.get(uid.lower(), "notfound")
-            if (isinstance(notfound, str) and notfound == label_value) or ( isinstance(label_value, float) and pd.isna(label_value)):
-                glog.get_logger().warning(f"NotFound/NaN value found for UID: {uid}")
+            label_value = self.m_idLabel_map.get(uid.lower(), dictKeyNotFound)
+            if (isinstance(notfound, str) and dictKeyNotFound == label_value):
+                glog.get_logger().warning(f"NotFound UID: {uid}")
                 return notfound
             if useRawValue:
                 return label_value
             else:
+                if (isinstance(label_value, float) and pd.isna(label_value)):
+                    glog.get_logger().warning(f"NaN/nan value found for UID: {uid}")
+                    label_value = str(label_value)
                 return self._labelName_to_abbreviation(label_value)  # Handle float-formatted integers
         except (ValueError, TypeError) as e:
             glog.get_logger().warning(f"Invalid DataLabel value for UID {uid}: {str(e)}")
@@ -203,13 +209,14 @@ def main_generateTiradsDataset():
                                         'verify_3000_tirads1_5', 'sop_uid')
         
         # Define target counts (example: adjust based on requirements)
-        everyTypeCount = 600
+        everyTypeCount = 10
 
         # Convert to the new name mapping
         target_counts = {
             'FOCI_PUNCTATEECHOGENICITY': everyTypeCount,
             'FOCI_MACROCALCIFICATION': everyTypeCount,
             'FOCI_PERIPHERALCALCIFICATION': everyTypeCount,
+            'FOCI_NOTEXIST': everyTypeCount,
         }
         label_keys = list(target_counts.keys())
         alreadyAppendCount=[0,0,0,0,0]
