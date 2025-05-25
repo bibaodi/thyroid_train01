@@ -493,7 +493,7 @@ class LabelmeFormat2YOLOFormat:
             return -1
         
         for ijsonpath in tqdm(jsons, desc="processing Jsons:"):
-            ret  = self.parseXiaobaoJson(ijsonpath, noSpreadSheet= True)
+            ret  = self.parseXiaobaoJson(ijsonpath.absolute(), noSpreadSheet= True)
             logger.info(f"debug: process [{ijsonpath}], ret={ret}")
             if ret <0:
                 logger.info(f"Err: parse json failed")
@@ -506,9 +506,9 @@ class LabelmeFormat2YOLOFormat:
         working_dir=casesFolder
 
         if self.isSegmentTask():
-            outputYoloPath=working_dir.with_suffix('.ylSegBoM')
+            outputYoloPath=working_dir.with_suffix('.ylSegFmt')
         elif self.isDetectTask():
-            outputYoloPath=working_dir.with_suffix('.ylDetectBoM')
+            outputYoloPath=working_dir.with_suffix('.ylDetectFmt')
         else:
             logger.error(f"Err: not support task type:{self.taskType}")
             return -1
