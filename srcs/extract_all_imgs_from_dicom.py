@@ -12,13 +12,15 @@ def generateImagesFromDicom(dataset, filename="extracted_folder", extractfps=0):
 
         Modelled after Dataset._pretty_str()
     """
-    cine_rate = 12    
+    cine_rate = 12
+    imageSuffix = '.jpg'    
     for data_element in dataset:
         if data_element.name == 'Cine Rate':
             print(f"Cine Rate:{data_element.value}, {type(data_element.value)}")
             cine_rate = data_element.value.real
         if data_element.name == 'Pixel Data':
             pixel_datas = data_element.value
+        #if dataset.file_meta.TransferSyntaxUID
        
     # check frame number and tranfersyntex here
     frmpath = filename + '_frms'
@@ -34,7 +36,7 @@ def generateImagesFromDicom(dataset, filename="extracted_folder", extractfps=0):
         delta = sequence_index - (frmindex * delta_step)
         if delta >= 1 or delta < 0:
             continue
-        frmname = os.path.join(frmpath, f"frm-{(frmindex+1):04d}.png")
+        frmname = os.path.join(frmpath, f"frm-{(frmindex+1):04d}{imageSuffix}")
         #print("generateImagesFromDicom: {0} {1} : {2} bytes".format(">>", frmname, len(frm)))
         with open(frmname, 'wb+') as f:
             f.write(frm)
@@ -94,7 +96,7 @@ def extract_all_dcm_imgs(dcm_root_dir, count=0):
         print('Handle with {0} [{1}/]'.format(dcm_dir, ct + 1))
         files_in_dir = os.listdir(dcm_dir)
         if len(files_in_dir) < 2:
-            getLogger().info(f"Empty dirctory : {dcm_dir}")
+            print(f"Empty dirctory : {dcm_dir}")
             continue
         else:
             for dcmf in files_in_dir:

@@ -54,8 +54,15 @@ j_target_o = json.loads(j_target_s)
 j_shape_item = j_target_o["shapes"][0].copy()
 j_shape_item["points"].clear()
 j_shape_item["label"]=str()
-
+Label_Name="Trachea"
 #print(j_shape_item,j_shape_item)
+
+def get_image_path(target_dir, filename_base):
+    """Find image file with any extension matching the base name"""
+    for f in os.listdir(target_dir):
+        if f.startswith(filename_base + '.'):
+            return f
+    return None
 
 def convert_nodule_json_v2(json_file, target_json_dir):
     """
@@ -89,6 +96,10 @@ def convert_nodule_json_v2(json_file, target_json_dir):
             #--02 extract json per image 
             polygonPoints=[]
             filename = f"frm-{(frameNumber+1):04d}"
+            imagefilename = get_image_path(target_json_dir, filename)
+            if imagefilename is None:
+                print(f"image file not exist: {target_json_dir}/{filename}")
+                continue
             #--02.1 remove the exist json file
             target_json_name = os.path.join(target_json_dir, f"{filename}.json")
             if os.path.exists(target_json_name):
@@ -97,7 +108,7 @@ def convert_nodule_json_v2(json_file, target_json_dir):
 
             #--03 create target labelme format json
             target_json=j_target_o.copy()
-            target_json['imagePath']=f"{filename}.png"
+            target_json['imagePath']=imagefilename
             target_json['shapes'].clear()
         
             lesions = one_data_item["lesions"]
@@ -129,8 +140,8 @@ def convert_nodule_json_v2(json_file, target_json_dir):
                     #--04 create target labelme format json
                     #if lesion_idx>0:
                     target_json["shapes"].append(j_shape_item.copy())
-                    
-                    target_json['shapes'][lesion_idx]['label']='ThyNodu'
+                    global Label_Name
+                    target_json['shapes'][lesion_idx]['label']=Label_Name
                     target_json['shapes'][lesion_idx]['points']=available_pts
                     isCurrentImageHasLabelmeJsonFile=True
             else:
@@ -212,13 +223,25 @@ def processJsonInCases(casesFolder):
             print("success,,,")
 #os.listdir(working_dir)
 
+def main():
+    if len(sys.argv)<2:
+        print(f"Usage:\n\t App DcmRootDir Label_Name")
+    else:
+        dcm_root_dir=sys.argv[1]
+        global Label_Name
+        Label_Name=sys.argv[2]
+        while True:
+            confirm = input(f"Confirm label name '{Label_Name}'? [y/n]: ").strip().lower()
+            if confirm == 'y':
+                break
+            elif confirm == 'n':
+                print("Aborting...")
+                sys.exit(0)
+            print("Invalid input, please enter 'y' or 'n'")
+        processJsonInCases(dcm_root_dir)
 
 ########
 if __name__ == "__main__":
     dcm_root_dir=r"/mnt/f/241129-zhipu-thyroid-datas/12-received_data-updates/241208-increments/002"
-    if len(sys.argv)<2:
-        print(f"Usage:\n\t App DcmRootDir")
-    else:
-        dcm_root_dir=sys.argv[1]
-        processJsonInCases(dcm_root_dir)
+    main()
         #convert_nodule_json_v2('/mnt/f/240926-RayShap/241129-thyroid-datas/52-debug/thyroidNodules_axp087/1.2.250.1.204.5.8373724313.20210416143848345628.2.0.50.80.2.20241111095056666_MARK.json', r'/mnt/f/240926-RayShap/241129-thyroid-datas/52-debug/thyroidNodules_axp087/targetJsonLabelformatDir')
