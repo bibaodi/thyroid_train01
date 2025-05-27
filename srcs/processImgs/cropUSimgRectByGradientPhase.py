@@ -3,6 +3,7 @@ APP:cropUSimgRectByGradientPhase
 - eton@241215 V1.0 first edition;
 - eton@241218 V1.1 add logging , support folder;
 - eton@241219 V1.2 add python version check for api not compatible (develop in Py3.10, Errors acccur in Py3.6)
+- eton@250527 V1.3 support jpg image suffix.
 """
 
 import cv2
