@@ -254,11 +254,15 @@ class CropUsImageClass:
         self.showCropedImg(openingImg, roiInfo)
 
     def main_processDicomFolder(self, dcmfolder:pathlib):
-        imgfiles=[i for i in sorted(dcmfolder.glob('*.png'))]
-        if len(imgfiles) < 1:
+        allImgFiles=[]
+        imgsuffixes=['png', 'jpg', 'jpeg', 'JPG', 'JPEG']
+        for onesuffix in imgsuffixes:
+            imgfiles=[i for i in sorted(dcmfolder.glob(f'*.{onesuffix}'))]
+            allImgFiles.extend(imgfiles)
+        if len(allImgFiles) < 1:
             logger.error(f"{dcmfolder} contains no png!")
             return -1
-        for oneimgfile in tqdm(imgfiles, desc="Cropping"):
+        for oneimgfile in tqdm(allImgFiles, desc="Cropping"):
             imgfilestr=str(oneimgfile)
             imageBgr=cv2.imread(imgfilestr)
             self.m_imgname=imgfilestr
