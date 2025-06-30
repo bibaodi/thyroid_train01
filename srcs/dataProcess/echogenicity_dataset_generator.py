@@ -25,6 +25,7 @@ IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff'}
 EchoGenicityNameMapper = {
     u'等回声': 'ISOECHO',
     u'高回声': 'HPRECHO',
+    u'强回声': 'HPRECHO',
     u'低回声': 'HPOECHO',
     u'极低回声': 'MHYECHO',
     u'实性': 'SOLIDECHO',
@@ -189,7 +190,7 @@ def main_generateTiradsDataset():
     parser.add_argument('-i', '--image-root', required=True, help='Root directory containing medical images')
     parser.add_argument('-s', '--img-info-sheet', required=True, help='Path to DataLabel spreadsheet')
     parser.add_argument('-b', '--block-items-sheet', required=True, help='Path to block list spreadsheet')
-    parser.add_argument('-o', '--output', default='echoComposition_v01.250423.csv', 
+    parser.add_argument('-o', '--output', default='echogenicity_v02.250630.csv', 
                       help='Output CSV file path')
     args = parser.parse_args()
 
@@ -203,20 +204,20 @@ def main_generateTiradsDataset():
     try:
         # Initialize all components
         image_index = generate_image_index(args.image_root)
-        tirads_checker = ImageLabelChecker(args.img_info_sheet, 'sop_0422',
-                                      'sop_uid', 'std_foci')
+        tirads_checker = ImageLabelChecker(args.img_info_sheet, 'originSheet',
+                                      'sop_uid', 'us_std_echo')
         block_checker = BlockListChecker(args.block_items_sheet, 
                                         'verify_3000_tirads1_5', 'sop_uid')
         
         # Define target counts (example: adjust based on requirements)
-        everyTypeCount = 10
+        everyTypeCount = 600
 
         # Convert to the new name mapping
         target_counts = {
-            'FOCI_PUNCTATEECHOGENICITY': everyTypeCount,
-            'FOCI_MACROCALCIFICATION': everyTypeCount,
-            'FOCI_PERIPHERALCALCIFICATION': everyTypeCount,
-            'FOCI_NOTEXIST': everyTypeCount,
+            'HPRECHO': everyTypeCount,
+            'ISOECHO': everyTypeCount,
+            'HPOECHO': everyTypeCount,
+            'MHYECHO': everyTypeCount,
         }
         label_keys = list(target_counts.keys())
         alreadyAppendCount=[0,0,0,0,0]
@@ -233,5 +234,5 @@ def main_generateTiradsDataset():
         raise SystemExit(1) from e
 
 if __name__ == "__main__":
-    glog.glogger = glog.initLogger("echoComposition4_dataset.log")
+    glog.glogger = glog.initLogger("echogenicity_dataset.log")
     main_generateTiradsDataset()
