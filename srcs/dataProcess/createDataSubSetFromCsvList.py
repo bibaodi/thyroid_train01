@@ -86,11 +86,15 @@ class ImageOrganizer:
 
 def main():
     parser = argparse.ArgumentParser(description='Organize medical images by labels')
-    parser.add_argument('source_root', type=pathlib.Path, help='Source images directory')
-    parser.add_argument('csv_file', type=pathlib.Path, help='CSV file with filenames and labels')
-    parser.add_argument('output_root', type=pathlib.Path, help='Output directory')
-    parser.add_argument('--log_file', type=pathlib.Path, default='image_organizer.log',
-                       help='Path to log file')
+    # keyword arguments
+    parser.add_argument('-i', '--source-root', dest='source_root', type=pathlib.Path,
+                      required=True, help='Source images directory')
+    parser.add_argument('-f', '--csv-file', dest='csv_file', type=pathlib.Path,
+                      required=True, help='CSV file with filenames and labels')
+    parser.add_argument('-o', '--output-root', dest='output_root', type=pathlib.Path,
+                      required=True, help='Output directory')
+    parser.add_argument('--log-file', type=pathlib.Path, default='image_organizer.log',
+                      help='Path to log file')
     
     args = parser.parse_args()
 
