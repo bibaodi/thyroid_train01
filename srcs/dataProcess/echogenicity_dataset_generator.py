@@ -22,20 +22,28 @@ import glog
 
 # --- Constants ---
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff'}
-EchoGenicityNameMapper = {
+EchoicFeatureNameMapper = {
+    u'10声性': 'ECHOGENICITY_TYPE',
     u'等回声': 'ISOECHO',
     u'高回声': 'HPRECHO',
     u'强回声': 'HPRECHO',
     u'低回声': 'HPOECHO',
     u'极低回声': 'MHYECHO',
+    u'无回声': 'NOOECHO',
+    u'11成分': 'ECHOIC_COMPOSITION',
     u'实性': 'SOLIDECHO',
     u'囊实性': 'CYSTICSOLID',
     u'囊性': 'CYSTICECHO',
     u'海绵样': 'SPONGIFORM',
+    u'12边界': 'ECHOIC_MARGIN',
     u'不清': 'MARGILLDEFINED',
     u'光滑': 'MARGCIRCUMSCRIBED',
     u'不规则': 'MARGIRREGULAR',
     u'外侵': 'MARGEXTRATHYR',
+    u'欠清': 'MARGPOORLYDEFINED',
+    u'尚清': 'MARGRELATIVELYDEFINED',
+    U'清楚':' MARGWELLDEFINED',
+    u'13局部': 'ECHOIC_FOCI',
     u'点状强回声': 'FOCI_PUNCTATEECHOGENICITY',
     u'粗大钙化': 'FOCI_MACROCALCIFICATION',
     u'粗大钙化,点状强回声': 'FOCI_MACROCALCIFICATION',
@@ -70,7 +78,7 @@ class ImageLabelChecker:
         self.m_datalabel_col = dataLabel_column.lower()
         
         self.m_idLabel_map = self._create_dataIdLabel_mapping()
-        self.m_echoGenicityNameMapper = EchoGenicityNameMapper
+        self.m_echoicFeatureNameMapper = EchoicFeatureNameMapper
         glog.get_logger().info(f"Loaded {len(self.m_idLabel_map)} Data entries")
 
     def _validate_inputs(self, path: str, sheet: str, columns: List[str]):
@@ -86,7 +94,7 @@ class ImageLabelChecker:
 
     def _labelName_to_abbreviation(self, label_name: str) -> str:
         """Convert label name to abbreviation"""
-        return self.m_echoGenicityNameMapper.get(label_name, 'NotFound')
+        return self.m_echoicFeatureNameMapper.get(label_name, 'NotFound')
 
     def get_label_value(self, uid: str, useRawValue=False) -> str:
         """Get the label value for a given ID"""
@@ -184,13 +192,39 @@ def validate_input_parameters(args: argparse.Namespace):
         glog.get_logger().error(f"Block list spreadsheet not found: {args.block_items_sheet}")
     return True 
 
+def getEchoicFeatureCategoryNumberDict(featureCategory: str, nof4everyType: int) -> Dict[str, int]:
+    """
+    Get the number of items for each category in the echoic feature.
+
+    Args:
+    featureCategory (str): The category of the echoic feature.
+    nof4everyType (int): The number of items for each category.
+
+    Returns:
+    Dict[str, int]: A dictionary mapping each category to the number of items.
+    """
+    everyTypeCount = nof4everyType if isinstance(nof4everyType, int) else 6
+    echoGenicityTypes=   [ 'ISOECHO', 'HPOECHO', 'MHYECHO','NOOECHO']            #'HPRECHO': everyTypeCount,
+    echoCompositionTypes=   [ 'SOLIDECHO', 'CYSTICSOLID', 'CYSTICECHO']
+    echoNoduleMarginTypes= [ 'MARGWELLDEFINED',  'MARGRELATIVELYDEFINED', 'MARGPOORLYDEFINED','MARGILLDEFINED']
+    echoFociTypes= [ 'FOCI_PUNCTATEECHOGENICITY', 'FOCI_MACROCALCIFICATION']
+    
+    allEchoicTypes = {'echoGenicity': echoGenicityTypes,
+               'echoComposition': echoCompositionTypes,
+               'echoNoduleMargin': echoNoduleMarginTypes,
+               'echoFoci': echoFociTypes,
+               }
+    if featureCategory in allEchoicTypes:
+        return {ikey:everyTypeCount for ikey in  allEchoicTypes[featureCategory]}
+    return {}
+
 def main_generateTiradsDataset():
     parser = argparse.ArgumentParser(description='DataLabel Dataset Generator')
     # Changed positional arguments to required keyword arguments
     parser.add_argument('-i', '--image-root', required=True, help='Root directory containing medical images')
     parser.add_argument('-s', '--img-info-sheet', required=True, help='Path to DataLabel spreadsheet')
     parser.add_argument('-b', '--block-items-sheet', required=True, help='Path to block list spreadsheet')
-    parser.add_argument('-o', '--output', default='echogenicity_v02.250630.csv', 
+    parser.add_argument('-o', '--output', required=True, type=str, default='echogenicity_v02.250630.csv', 
                       help='Output CSV file path')
     args = parser.parse_args()
 
@@ -210,15 +244,11 @@ def main_generateTiradsDataset():
                                         'verify_3000_tirads1_5', 'sop_uid')
         
         # Define target counts (example: adjust based on requirements)
-        everyTypeCount = 600
+        everyTypeCount = 6
 
         # Convert to the new name mapping
-        target_counts = {
-            'HPRECHO': everyTypeCount,
-            'ISOECHO': everyTypeCount,
-            'HPOECHO': everyTypeCount,
-            'MHYECHO': everyTypeCount,
-        }
+        target_counts = getEchoicFeatureCategoryNumberDict(
+            'echoGenicity', everyTypeCount)
         label_keys = list(target_counts.keys())
         alreadyAppendCount=[0,0,0,0,0]
         for itck, itcv in target_counts.items():
