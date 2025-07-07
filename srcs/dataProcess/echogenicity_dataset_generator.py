@@ -237,18 +237,20 @@ def main_generateTiradsDataset():
 
     try:
         # Initialize all components
-        image_index = generate_image_index(args.image_root)
         tirads_checker = ImageLabelChecker(args.img_info_sheet, 'originSheet',
-                                      'sop_uid', 'us_std_echo')
+                                      'sop_uid', 'composition')
+        image_index = generate_image_index(args.image_root)
         block_checker = BlockListChecker(args.block_items_sheet, 
                                         'verify_3000_tirads1_5', 'sop_uid')
         
         # Define target counts (example: adjust based on requirements)
-        everyTypeCount = 6
+        everyTypeCount = 1000
 
         # Convert to the new name mapping
         target_counts = getEchoicFeatureCategoryNumberDict(
             'echoGenicity', everyTypeCount)
+        target_counts = getEchoicFeatureCategoryNumberDict(
+            'echoComposition', everyTypeCount)
         label_keys = list(target_counts.keys())
         alreadyAppendCount=[0,0,0,0,0]
         for itck, itcv in target_counts.items():
