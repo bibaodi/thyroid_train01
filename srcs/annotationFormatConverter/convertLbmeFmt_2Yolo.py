@@ -327,7 +327,7 @@ class LabelmeFormat2YOLOFormat:
         outputYoloPath_txt=outputYoloPath.joinpath(outputLabelStem)
         for ipath in [outputYoloPath_img, outputYoloPath_txt]:
             if not ipath.is_dir():
-                ipath.mkdir(mode=0o666, parents=True, exist_ok=True)
+                ipath.mkdir(mode=0o766, parents=True, exist_ok=True)
                 print(f"debug: create not exist folder:[{ipath}]")
 
         if not inImgPath.is_file():
@@ -347,7 +347,7 @@ class LabelmeFormat2YOLOFormat:
         except FileNotFoundError:
             logger.info(f"Err:Source file not found: {inImgPath}")
         except PermissionError:
-            logger.info(f"Err:Permission denied: Cannot copy to {newImagePath}")
+            logger.info(f"Err:Permission denied: Cannot copy [{inImgPath}] to {newImagePath}")
         except Exception as e:
             logger.info(f"Err: An error occurred: {e}")
 
@@ -485,11 +485,11 @@ class LabelmeFormat2YOLOFormat:
             
         labelmefolderpath=casepath
         
-        imgs=[iimg for iimg in sorted(casepath.glob('*.{jpg,png,jpeg,bmp}'))]
-        jsons=[ijson for ijson in sorted(casepath.glob("*.json"))]
+        imgs=[iimg for iimg in sorted(labelmefolderpath.glob('*.{jpg,png,jpeg,bmp}'))]
+        jsons=[ijson for ijson in sorted(labelmefolderpath.glob("*.json"))]
 
         if len(jsons) < 1:
-            logger.info("Err: json file not found in casefolder:{casepath}")
+            logger.info("Err: json file not found in casefolder:{labelmefolderpath}")
             return -1
         
         for ijsonpath in tqdm(jsons, desc="processing Jsons:"):
@@ -536,28 +536,29 @@ class LabelmeFormat2YOLOFormat:
 def main_entrance():
     if len(sys.argv)<3:
         print(f"App ImageFolder taskType spreadsheetFile.xls")
-    else:
-        glog.glogger = glog.initLogger("gen301PX_yoloDS_fromLbmefmt")
-        global logger
-        logger = glog.glogger
-        imgfolder=pathlib.Path(sys.argv[1])
-        if False == imgfolder.is_dir():
-            print(f"Error: please confirm folder exist[{str(imgfolder)}]!!!")
-            return -1
-        glog.glogger.info(f"Processing:{imgfolder}...")
+        return 
+    
+    glog.glogger = glog.initLogger("gen301PX_yoloDS_fromLbmefmt")
+    global logger
+    logger = glog.glogger
+    imgfolder=pathlib.Path(sys.argv[1])
+    if False == imgfolder.is_dir():
+        print(f"Error: please confirm folder exist[{str(imgfolder)}]!!!")
+        return -1
+    glog.glogger.info(f"Processing:{imgfolder}...")
 
-        taskType=sys.argv[2]
-        if taskType == "segment":
-            taskType=LabelmeFormat2YOLOFormat.static_taskType_segment
-        elif taskType == "detect":
-            taskType=LabelmeFormat2YOLOFormat.static_taskType_detect
-        exlfile= sys.argv[3] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
-        selectColName='access_no'
-        outputColName=u'bom' #'ti_rads'#u'bom' 
-        sheetName="origintable"
-        
-        fmtConverter=LabelmeFormat2YOLOFormat(taskType, exlfile, sheetName,selectColName, outputColName)
-        fmtConverter.process_multiPACScases(imgfolder)
+    taskType=sys.argv[2]
+    if taskType == "segment":
+        taskType=LabelmeFormat2YOLOFormat.static_taskType_segment
+    elif taskType == "detect":
+        taskType=LabelmeFormat2YOLOFormat.static_taskType_detect
+    exlfile= sys.argv[3] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
+    selectColName='access_no'
+    outputColName=u'bom' #'ti_rads'#u'bom' 
+    sheetName="origintable"
+    
+    fmtConverter=LabelmeFormat2YOLOFormat(taskType, exlfile, sheetName,selectColName, outputColName)
+    fmtConverter.process_multiPACScases(imgfolder)
 
 def test_it():
     rootFolder=r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat'
