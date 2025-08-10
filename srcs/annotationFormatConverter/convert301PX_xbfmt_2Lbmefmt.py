@@ -113,7 +113,7 @@ def parseXbfmtV2For301PxThyNodu(json_file:typing.Union[str, pathlib.Path], targe
                     #if lesion_idx>0:
                     target_json["shapes"].append(LabelmeJson.getOneShapeObj())
 
-                    target_json['shapes'][lesion_idx]['label']='ThyNodu'
+                    target_json['shapes'][lesion_idx]['label']='esophagus'
                     target_json['shapes'][lesion_idx]['points']=available_pts
                     isCurrentImageHasLabelmeJsonFile=True
             else:
