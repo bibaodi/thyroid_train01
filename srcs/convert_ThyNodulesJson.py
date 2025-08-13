@@ -56,6 +56,7 @@ j_shape_item["points"].clear()
 j_shape_item["label"]=str()
 Label_Name="Trachea"
 Label_Name="esophagus"
+Label_Name="Carotid"
 #print(j_shape_item,j_shape_item)
 
 def get_image_path(target_dir, filename_base):
