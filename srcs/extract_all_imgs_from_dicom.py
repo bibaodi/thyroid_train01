@@ -13,7 +13,32 @@ def generateImagesFromDicom(dataset, filename="extracted_folder", extractfps=0):
         Modelled after Dataset._pretty_str()
     """
     cine_rate = 12
-    imageSuffix = '.jpg'    
+    
+    # Define supported transfer syntax to file extension mapping
+    TRANSFER_SYNTAX_MAP = {
+        '1.2.840.10008.1.2.4.50': '.jpg',  # JPEG Baseline
+        '1.2.840.10008.1.2.4.51': '.jpg',  # JPEG Extended
+        '1.2.840.10008.1.2.4.70': '.jpg',  # JPEG Lossless
+        '1.2.840.10008.1.2.4.90': '.jpg',  # JPEG 2000 Lossless
+        '1.2.840.10008.1.2': '.png',       # Uncompressed
+        '1.2.840.10008.1.2.1': '.png'      # Explicit VR Little Endian
+    }
+
+    def _get_file_extension() -> str:
+        """Determine appropriate file extension based on DICOM transfer syntax.
+        
+        Returns:
+            File extension with leading dot
+        """
+        try:
+            return TRANSFER_SYNTAX_MAP.get(
+                dataset.file_meta.TransferSyntaxUID, 
+                '.png'  # Default for unknown formats
+            )
+        except AttributeError:
+            return '.png'  # Fallback if transfer syntax missing
+
+    imageSuffix = _get_file_extension()   
     for data_element in dataset:
         if data_element.name == 'Cine Rate':
             print(f"Cine Rate:{data_element.value}, {type(data_element.value)}")
