@@ -4,6 +4,8 @@ abstract the json format of labelme
 """
 import json
 import os
+import pathlib
+from typing import List
 
 jtargetStr="""
 {
@@ -60,7 +62,11 @@ def getOneShapeObj():
 def getOneTargetObj():
     return jtargetObj.copy()
 
-import pathlib
+def get_files_with_suffixes(directory: pathlib.Path, suffixes: List[str]) -> List[pathlib.Path]:
+    files = []
+    for suffix in suffixes:
+        files.extend(directory.glob(f'*.{suffix}'))
+    return sorted(files)
 
 def getImageFilesBySuffixes(casepath:pathlib.Path):
     image_suffixes = ['jpg', 'png', 'jpeg', 'bmp']
