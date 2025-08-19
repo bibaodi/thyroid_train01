@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Script to convert image files with versioned JSON annotations to Labelme format.
 
@@ -6,7 +8,7 @@ multiple versions of labeled JSON files. It selects the latest versioned JSON fi
 for conversion to Labelme format.
 
 Author: eton
-Date: 2025-08-13
+Date: 2025-08-19
 Version: 1.0
 """
 
