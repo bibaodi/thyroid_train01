@@ -4,6 +4,7 @@
 # version: 0.1 first version
 # eton@250311 version:0.2, support no spreadsheet file.
 # eton@250314 version:0.3, support both detect and segment task data format. import log from glog.
+# eton@250820 version:0.4, support prefixStartWithFrm as option and refine usage;
 # yolo-segment: <class-index> <x1> <y1> <x2> <y2> ... <xn> <yn> ; range is (0,1)
 # yolo-detect: <class-index> <x> <y> <width> <height> ; range is (0,1)
 
@@ -359,7 +360,7 @@ class LabelmeFormat2YOLOFormat:
         logger.info(f"debug: end of file create {newImagePath}")
         return 0
 
-    def parseXiaobaoJson(self, json_file:pathlib.Path, leastPointCount:int=4, **kwargs):
+    def parselabelmeJson(self, json_file:pathlib.Path, leastPointCount:int=4, **kwargs):
         """
             1. deal with one xiaobai's json;
             2. get all shape, create with rectangle;
@@ -379,7 +380,13 @@ class LabelmeFormat2YOLOFormat:
             return -1
         
         jsonbasename=json_file.name
-        if not jsonbasename.startswith("frm-"):
+        
+        prefixStartWithFrm=True
+        for key, value in kwargs.items():
+            if key == 'prefixStartWithFrm':
+                prefixStartWithFrm = value
+                break
+        if prefixStartWithFrm and not jsonbasename.startswith("frm-"):
             logger.error(f"\tfile prefix not match:[{jsonbasename}]")
             return -2
         imagefolder=json_file.parent
@@ -493,7 +500,7 @@ class LabelmeFormat2YOLOFormat:
             return -1
         
         for ijsonpath in tqdm(jsons, desc="processing Jsons:"):
-            ret  = self.parseXiaobaoJson(ijsonpath.absolute(), noSpreadSheet= True)
+            ret  = self.parselabelmeJson(ijsonpath.absolute(), noSpreadSheet= True, prefixStartWithFrm=False)
             logger.info(f"debug: process [{ijsonpath}], ret={ret}")
             if ret <0:
                 logger.info(f"Err: parse json failed")
@@ -535,7 +542,7 @@ class LabelmeFormat2YOLOFormat:
 
 def main_entrance():
     if len(sys.argv)<3:
-        print(f"App ImageFolder taskType spreadsheetFile.xls")
+        print(f"App ImageFolder taskType(segment|detect) spreadsheetFile.xls(optional)")
         return 
     
     glog.glogger = glog.initLogger("gen301PX_yoloDS_fromLbmefmt")
@@ -552,6 +559,7 @@ def main_entrance():
         taskType=LabelmeFormat2YOLOFormat.static_taskType_segment
     elif taskType == "detect":
         taskType=LabelmeFormat2YOLOFormat.static_taskType_detect
+    
     exlfile= sys.argv[3] #r'/mnt/f/241129-zhipu-thyroid-datas/01-mini-batch/forObjectDetect_PACSDataInLabelmeFormatConvert2YoloFormat/dataHasTIRADS_250105.xls'
     selectColName='access_no'
     outputColName=u'bom' #'ti_rads'#u'bom' 
