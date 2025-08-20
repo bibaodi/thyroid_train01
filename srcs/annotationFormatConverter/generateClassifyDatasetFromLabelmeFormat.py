@@ -589,7 +589,7 @@ if __name__ == "__main__":
     if len(sys.argv)<2:
         print(f"Usage: App ImageFolder")
     else:
-        glog.glogger = glog.initLogger("convert301PX_xbfmt_2Lbmefmt")
+        glog.glogger = glog.initLogger("convert301PX_ClsTask_xbfmt2Lbmefmt")
         datasetFolder=sys.argv[1]
         #test_it()
         #sys.exit()  # Add exit to avoid the following code to be executed during testing.
