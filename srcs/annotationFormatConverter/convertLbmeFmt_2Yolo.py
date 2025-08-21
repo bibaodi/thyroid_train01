@@ -397,6 +397,9 @@ class LabelmeFormat2YOLOFormat:
         # 01-read from nodule-json-file
         with open(json_file, 'r') as f:
             lbm_json = json.load(f)
+            if 'imagePath' not in lbm_json:
+                logger.error(f"Err: imagePath not in json file.[{json_file}](maybe lmstart)")
+                return -5
             imagepath=lbm_json['imagePath']
             image_file = imagefolder.joinpath(imagepath)
             if not image_file.is_file():
