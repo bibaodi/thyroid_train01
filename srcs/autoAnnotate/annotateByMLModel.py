@@ -16,6 +16,7 @@ import argparse
 import json
 import os
 import sys
+import logging
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -80,7 +81,7 @@ def validate_args(args: argparse.Namespace) -> bool:
     return True
 
 
-def predict_with_model(model_file: str, model_type: str, image_path: Path) -> List[Dict[str, Any]]:
+def predict_with_model(model_file: str, model_type: str, image_path: Path) -> tuple[List[Dict[str, Any]], Dict[int, str]]:
     """
     Use the model to predict annotations for an image.
     
@@ -90,17 +91,22 @@ def predict_with_model(model_file: str, model_type: str, image_path: Path) -> Li
         image_path: Path to the image file
         
     Returns:
-        List of predictions in a standardized format
+        Tuple of (predictions, class_names)
     """
     logger = get_logger()
     
     if not YOLO_AVAILABLE:
         logger.error("YOLO is not available. Cannot perform prediction.")
-        return []
+        return [], {}
     
     try:
         # Load the model
         model = YOLO(model_file)
+        
+        # Get class names if available
+        class_names = {}
+        if hasattr(model, 'names'):
+            class_names = model.names
         
         # Perform prediction
         results = model(str(image_path))
@@ -157,21 +163,22 @@ def predict_with_model(model_file: str, model_type: str, image_path: Path) -> Li
                         logger.warning(f"Skipping mask with insufficient points: {len(mask_points)}")
         
         logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
-        return predictions
+        return predictions, class_names
         
     except Exception as e:
         logger.error(f"Error during prediction for {image_path.name}: {e}")
-        return []
+        return [], {}
 
 
-def convert_to_labelme_format(predictions: List[Dict[str, Any]], image_path: Path, label_name: str = "class0") -> Dict[str, Any]:
+def convert_to_labelme_format(predictions: List[Dict[str, Any]], image_path: Path, class_names: Dict[int, str] = None, label_name: str = None) -> Dict[str, Any]:
     """
     Convert model predictions to LabelMe JSON format.
     
     Args:
         predictions: List of predictions from the model
         image_path: Path to the original image file
-        label_name: Label name to use for all annotations (default: "class0")
+        class_names: Dictionary mapping class IDs to class names from the model
+        label_name: Label name to use for all annotations (if provided, overrides class names)
         
     Returns:
         Dictionary in LabelMe JSON format
@@ -195,8 +202,16 @@ def convert_to_labelme_format(predictions: List[Dict[str, Any]], image_path: Pat
         for pred in predictions:
             shape = getOneShapeObj()
             
-            # Set label (using the provided label_name instead of class_id)
-            shape["label"] = label_name
+            # Set label based on priority:
+            # 1. Use label_name if provided
+            # 2. Use class name from model if available
+            # 3. Use class_id as fallback
+            if label_name:
+                shape["label"] = label_name
+            elif class_names and pred['class_id'] in class_names:
+                shape["label"] = class_names[pred['class_id']]
+            else:
+                shape["label"] = f"class_{pred['class_id']}"
             
             # Set points
             shape["points"] = pred["polygon"]
@@ -241,7 +256,7 @@ def save_labelme_json(labelme_data: Dict[str, Any], output_path: Path) -> bool:
         return False
 
 
-def process_images(model_file: str, model_type: str, input_folder: Path, output_folder: Path, label_name: str = "class0") -> bool:
+def process_images(model_file: str, model_type: str, input_folder: Path, output_folder: Path, label_name: str = None) -> bool:
     """
     Process all images in the input folder using the model and save results in LabelMe format.
     
@@ -250,7 +265,7 @@ def process_images(model_file: str, model_type: str, input_folder: Path, output_
         model_type: Type of model ('segmentation' or 'detection')
         input_folder: Path to the folder containing input images
         output_folder: Path to the folder where results should be saved
-        label_name: Label name to use for all annotations (default: "class0")
+        label_name: Label name to use for all annotations (optional)
         
     Returns:
         bool: True if successful, False otherwise
@@ -269,15 +284,20 @@ def process_images(model_file: str, model_type: str, input_folder: Path, output_
         
         # Process each image
         for image_path in image_files:
-            logger.info(f"Processing {image_path.name}...")        
+            logger.info(f"Processing {image_path.name}...")
+            
             # Use model to predict
-            predictions = predict_with_model(model_file, model_type, image_path)
-            # Convert predictions to LabelMe format with the specified label name
-            labelme_data = convert_to_labelme_format(predictions, image_path, label_name)
+            predictions, class_names = predict_with_model(model_file, model_type, image_path)
+            
+            # Convert predictions to LabelMe format
+            labelme_data = convert_to_labelme_format(predictions, image_path, class_names, label_name)
+            
             # Calculate relative path from input folder
             relative_path = image_path.relative_to(input_folder)
+            
             # Create output path with same relative structure
             output_path = output_folder / relative_path.with_suffix('.json')
+            
             # Save LabelMe JSON
             save_labelme_json(labelme_data, output_path)
         
@@ -294,7 +314,7 @@ def main():
     Main function to parse arguments and run the auto annotation process.
     """
     # Initialize logger
-    initLogger("autoAnnotate")
+    initLogger("auto_annotate")
     logger = get_logger()
     
     # Parse command line arguments
@@ -304,7 +324,7 @@ def main():
                         help='Type of model (segmentation or detection)')
     parser.add_argument('--input_folder', required=True, help='Path to the folder containing input images')
     parser.add_argument('--output_folder', required=True, help='Path to the folder where results should be saved')
-    parser.add_argument('--label_name', required=True, help='Label name to use for all annotations')
+    parser.add_argument('--label_name', default=None, help='Label name to use for all annotations (optional, uses model class names if available)')
     
     args = parser.parse_args()
     
@@ -318,7 +338,7 @@ def main():
         logger.error("Argument validation failed. Exiting.")
         return 1
     
-    # Process images with the specified label name
+    # Process images
     logger.info("Starting auto annotation process...")
     success = process_images(str(model_file), args.model_type, input_folder, output_folder, args.label_name)
     
