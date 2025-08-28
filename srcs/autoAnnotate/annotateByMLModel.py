@@ -9,7 +9,7 @@ Usage:
                            --input_folder <input_folder> --output_folder <output_folder>
 
 Author: eton
-Version: 0.1
+Version: 0.2
 """
 
 import argparse
@@ -36,277 +36,277 @@ try:
     YOLO_AVAILABLE = True
 except ImportError:
     YOLO_AVAILABLE = False
-    print("WARNING: ultralytics package not found. YOLO models will not be available.")
+    get_logger().fatal("WARNING: ultralytics package not found. YOLO models will not be available.")
 
 
-def validate_args(args: argparse.Namespace) -> bool:
-    """
-    Validate command line arguments.
+class AutoAnnotator:
+    """Class to handle automatic annotation of images using YOLO models."""
     
-    Args:
-        args: Parsed command line arguments
+    def __init__(self, model_file: str, model_type: str, input_folder: Path, 
+                 output_folder: Path, label_name: str = None):
+        """
+        Initialize the AutoAnnotator.
         
-    Returns:
-        bool: True if all arguments are valid, False otherwise
-    """
-    logger = get_logger()
+        Args:
+            model_file: Path to the model file
+            model_type: Type of model ('segmentation' or 'detection')
+            input_folder: Path to the folder containing input images
+            output_folder: Path to the folder where results should be saved
+            label_name: Label name to use for all annotations (optional)
+        """
+        self.m_model_file = model_file
+        self.m_model_type = model_type
+        self.m_input_folder = input_folder
+        self.m_output_folder = output_folder
+        self.m_label_name = label_name
+        self.m_logger = get_logger()
     
-    # Check if model file exists
-    if not os.path.exists(args.model_file):
-        logger.error(f"Model file does not exist: {args.model_file}")
-        return False
-    
-    # Check if model type is valid
-    if args.model_type not in ["segmentation", "detection"]:
-        logger.error(f"Invalid model type: {args.model_type}. Must be 'segmentation' or 'detection'.")
-        return False
-    
-    # Check if input folder exists
-    if not os.path.exists(args.input_folder):
-        logger.error(f"Input folder does not exist: {args.input_folder}")
-        return False
-    
-    # Check if input folder is actually a directory
-    if not os.path.isdir(args.input_folder):
-        logger.error(f"Input path is not a directory: {args.input_folder}")
-        return False
-    
-    # Create output folder if it doesn't exist
-    try:
-        os.makedirs(args.output_folder, exist_ok=True)
-    except Exception as e:
-        logger.error(f"Failed to create output folder {args.output_folder}: {e}")
-        return False
-    
-    return True
-
-
-def predict_with_model(model_file: str, model_type: str, image_path: Path) -> tuple[List[Dict[str, Any]], Dict[int, str]]:
-    """
-    Use the model to predict annotations for an image.
-    
-    Args:
-        model_file: Path to the model file
-        model_type: Type of model ('segmentation' or 'detection')
-        image_path: Path to the image file
+    def _validate_args(self) -> bool:
+        """
+        Validate initialization arguments.
         
-    Returns:
-        Tuple of (predictions, class_names)
-    """
-    logger = get_logger()
+        Returns:
+            bool: True if all arguments are valid, False otherwise
+        """
+        # Check if model file exists
+        if not os.path.exists(self.m_model_file):
+            self.m_logger.error(f"Model file does not exist: {self.m_model_file}")
+            return False
+        
+        # Check if model type is valid
+        if self.m_model_type not in ["segmentation", "detection"]:
+            self.m_logger.error(f"Invalid model type: {self.m_model_type}. Must be 'segmentation' or 'detection'.")
+            return False
+        
+        # Check if input folder exists
+        if not os.path.exists(self.m_input_folder):
+            self.m_logger.error(f"Input folder does not exist: {self.m_input_folder}")
+            return False
+        
+        # Check if input folder is actually a directory
+        if not os.path.isdir(self.m_input_folder):
+            self.m_logger.error(f"Input path is not a directory: {self.m_input_folder}")
+            return False
+        
+        # Create output folder if it doesn't exist
+        try:
+            os.makedirs(self.m_output_folder, exist_ok=True)
+        except Exception as e:
+            self.m_logger.error(f"Failed to create output folder {self.m_output_folder}: {e}")
+            return False
+        
+        return True
     
-    if not YOLO_AVAILABLE:
-        logger.error("YOLO is not available. Cannot perform prediction.")
-        return [], {}
-    
-    try:
-        # Load the model
-        model = YOLO(model_file)
+    def _predict_with_model(self, image_path: Path) -> tuple[List[Dict[str, Any]], Dict[int, str]]:
+        """
+        Use the model to predict annotations for an image.
         
-        # Get class names if available
-        class_names = {}
-        if hasattr(model, 'names'):
-            class_names = model.names
+        Args:
+            image_path: Path to the image file
+            
+        Returns:
+            Tuple of (predictions, class_names)
+        """
+        if not YOLO_AVAILABLE:
+            self.m_logger.error("YOLO is not available. Cannot perform prediction.")
+            return [], {}
         
-        # Perform prediction
-        results = model(str(image_path))
-        
-        # Process results
-        predictions = []
-        for result in results:
-            # Get boxes or masks depending on model type
-            if model_type == "detection" and hasattr(result, 'boxes'):
-                boxes = result.boxes
-                for box in boxes:
-                    # Extract box coordinates
-                    xyxy = box.xyxy[0].cpu().numpy()  # xyxy format
-                    class_id = int(box.cls[0].cpu().numpy())
-                    confidence = float(box.conf[0].cpu().numpy())
-                    
-                    # Convert to polygon format (rectangle)
-                    x1, y1, x2, y2 = xyxy
-                    polygon = [
-                        [float(x1), float(y1)],
-                        [float(x2), float(y1)],
-                        [float(x2), float(y2)],
-                        [float(x1), float(y2)]
-                    ]
-                    
-                    predictions.append({
-                        "class_id": class_id,
-                        "confidence": confidence,
-                        "polygon": polygon
-                    })
-            elif model_type == "segmentation" and hasattr(result, 'masks'):
-                masks = result.masks
-                boxes = result.boxes
-                
-                for i, mask in enumerate(masks):
-                    # Extract mask points - this gives the actual contour points
-                    mask_points = mask.xy[0]  # xy format
-                    
-                    # Get corresponding class and confidence
-                    class_id = int(boxes.cls[i].cpu().numpy()) if boxes is not None else 0
-                    confidence = float(boxes.conf[i].cpu().numpy()) if boxes is not None else 0.0
-                    
-                    # Convert to list of points
-                    # Ensure we have enough points for a proper polygon
-                    if len(mask_points) >= 3:  # Need at least 3 points for a polygon
-                        polygon = [[float(point[0]), float(point[1])] for point in mask_points]
+        try:
+            # Load the model
+            model = YOLO(self.m_model_file)
+            
+            # Get class names if available
+            class_names = {}
+            if hasattr(model, 'names'):
+                class_names = model.names
+            
+            # Perform prediction
+            results = model(str(image_path))
+            
+            # Process results
+            predictions = []
+            for result in results:
+                # Get boxes or masks depending on model type
+                if self.m_model_type == "detection" and hasattr(result, 'boxes'):
+                    boxes = result.boxes
+                    for box in boxes:
+                        # Extract box coordinates
+                        xyxy = box.xyxy[0].cpu().numpy()  # xyxy format
+                        class_id = int(box.cls[0].cpu().numpy())
+                        confidence = float(box.conf[0].cpu().numpy())
+                        
+                        # Convert to polygon format (rectangle)
+                        x1, y1, x2, y2 = xyxy
+                        polygon = [
+                            [float(x1), float(y1)],
+                            [float(x2), float(y1)],
+                            [float(x2), float(y2)],
+                            [float(x1), float(y2)]
+                        ]
                         
                         predictions.append({
                             "class_id": class_id,
                             "confidence": confidence,
                             "polygon": polygon
                         })
-                    else:
-                        logger.warning(f"Skipping mask with insufficient points: {len(mask_points)}")
-        
-        logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
-        return predictions, class_names
-        
-    except Exception as e:
-        logger.error(f"Error during prediction for {image_path.name}: {e}")
-        return [], {}
-
-
-def convert_to_labelme_format(predictions: List[Dict[str, Any]], image_path: Path, class_names: Dict[int, str] = None, label_name: str = None) -> Dict[str, Any]:
-    """
-    Convert model predictions to LabelMe JSON format.
-    
-    Args:
-        predictions: List of predictions from the model
-        image_path: Path to the original image file
-        class_names: Dictionary mapping class IDs to class names from the model
-        label_name: Label name to use for all annotations (if provided, overrides class names)
-        
-    Returns:
-        Dictionary in LabelMe JSON format
-    """
-    logger = get_logger()
-    
-    try:
-        # Create a new LabelMe JSON object
-        labelme_data = getOneTargetObj()
-        
-        # Clear existing shapes
-        labelme_data["shapes"].clear()
-        
-        # Set image path
-        labelme_data["imagePath"] = image_path.name
-        
-        # Set image data to None (will be loaded by LabelMe when needed)
-        labelme_data["imageData"] = None
-        
-        # Add predictions as shapes
-        for pred in predictions:
-            shape = getOneShapeObj()
+                elif self.m_model_type == "segmentation" and hasattr(result, 'masks'):
+                    masks = result.masks
+                    boxes = result.boxes
+                    
+                    for i, mask in enumerate(masks):
+                        # Extract mask points - this gives the actual contour points
+                        mask_points = mask.xy[0]  # xy format
+                        
+                        # Get corresponding class and confidence
+                        class_id = int(boxes.cls[i].cpu().numpy()) if boxes is not None else 0
+                        confidence = float(boxes.conf[i].cpu().numpy()) if boxes is not None else 0.0
+                        
+                        # Convert to list of points
+                        # Ensure we have enough points for a proper polygon
+                        if len(mask_points) >= 3:  # Need at least 3 points for a polygon
+                            polygon = [[float(point[0]), float(point[1])] for point in mask_points]
+                            
+                            predictions.append({
+                                "class_id": class_id,
+                                "confidence": confidence,
+                                "polygon": polygon
+                            })
+                        else:
+                            self.m_logger.warning(f"Skipping mask with insufficient points: {len(mask_points)}")      
+            self.m_logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
+            return predictions, class_names
             
-            # Set label based on priority:
-            # 1. Use label_name if provided
-            # 2. Use class name from model if available
-            # 3. Use class_id as fallback
-            if label_name:
-                shape["label"] = label_name
-            elif class_names and pred['class_id'] in class_names:
-                shape["label"] = class_names[pred['class_id']]
-            else:
-                shape["label"] = f"class_{pred['class_id']}"
+        except Exception as e:
+            self.m_logger.error(f"Error during prediction for {image_path.name}: {e}")
+            return [], {}
+    
+    def _convert_to_labelme_format(self, predictions: List[Dict[str, Any]], image_path: Path, 
+                                  class_names: Dict[int, str]) -> Dict[str, Any]:
+        """
+        Convert model predictions to LabelMe JSON format.
+        
+        Args:
+            predictions: List of predictions from the model
+            image_path: Path to the original image file
+            class_names: Dictionary mapping class IDs to class names from the model
             
-            # Set points
-            shape["points"] = pred["polygon"]
+        Returns:
+            Dictionary in LabelMe JSON format
+        """
+        try:
+            # Create a new LabelMe JSON object
+            labelme_data = getOneTargetObj()
             
-            # Add to shapes
-            labelme_data["shapes"].append(shape)
-        
-        logger.info(f"Converted {len(predictions)} predictions to LabelMe format for {image_path.name}")
-        return labelme_data
-        
-    except Exception as e:
-        logger.error(f"Error converting predictions to LabelMe format for {image_path.name}: {e}")
-        return {}
-
-
-def save_labelme_json(labelme_data: Dict[str, Any], output_path: Path) -> bool:
-    """
-    Save LabelMe JSON data to a file.
+            # Clear existing shapes
+            labelme_data["shapes"].clear()
+            
+            # Set image path
+            labelme_data["imagePath"] = image_path.name
+            
+            # Set image data to None (will be loaded by LabelMe when needed)
+            labelme_data["imageData"] = None
+            
+            # Add predictions as shapes
+            for pred in predictions:
+                shape = getOneShapeObj()
+                
+                # Set label based on priority:
+                # 1. Use m_label_name if provided
+                # 2. Use class name from model if available
+                # 3. Use class_id as fallback
+                if self.m_label_name:
+                    shape["label"] = self.m_label_name
+                elif class_names and pred['class_id'] in class_names:
+                    shape["label"] = class_names[pred['class_id']]
+                else:
+                    shape["label"] = f"class_{pred['class_id']}"
+                
+                # Set points
+                shape["points"] = pred["polygon"]
+                
+                # Add to shapes
+                labelme_data["shapes"].append(shape)
+            
+            self.m_logger.info(f"Converted {len(predictions)} predictions to LabelMe format for {image_path.name}")
+            return labelme_data
+            
+        except Exception as e:
+            self.m_logger.error(f"Error converting predictions to LabelMe format for {image_path.name}: {e}")
+            return {}
     
-    Args:
-        labelme_data: Dictionary in LabelMe JSON format
-        output_path: Path where the JSON file should be saved
+    def _save_labelme_json(self, labelme_data: Dict[str, Any], output_path: Path) -> bool:
+        """
+        Save LabelMe JSON data to a file.
         
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    logger = get_logger()
-    
-    try:
-        # Ensure output directory exists
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Save JSON file
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(labelme_data, f, ensure_ascii=False, indent=2)
-        
-        logger.info(f"Saved LabelMe JSON to {output_path}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Error saving LabelMe JSON to {output_path}: {e}")
-        return False
-
-
-def process_images(model_file: str, model_type: str, input_folder: Path, output_folder: Path, label_name: str = None) -> bool:
-    """
-    Process all images in the input folder using the model and save results in LabelMe format.
-    
-    Args:
-        model_file: Path to the model file
-        model_type: Type of model ('segmentation' or 'detection')
-        input_folder: Path to the folder containing input images
-        output_folder: Path to the folder where results should be saved
-        label_name: Label name to use for all annotations (optional)
-        
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    logger = get_logger()
-    
-    try:
-        # Get list of image files
-        image_files = getImageFilesBySuffixes(input_folder)
-        
-        if not image_files:
-            logger.warning(f"No image files found in {input_folder}")
+        Args:
+            labelme_data: Dictionary in LabelMe JSON format
+            output_path: Path where the JSON file should be saved
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Ensure output directory exists
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Save JSON file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(labelme_data, f, ensure_ascii=False, indent=2)
+            
+            self.m_logger.info(f"Saved LabelMe JSON to {output_path}")
+            return True
+            
+        except Exception as e:
+            self.m_logger.error(f"Error saving LabelMe JSON to {output_path}: {e}")
             return False
+    
+    def process_images(self) -> bool:
+        """
+        Process all images in the input folder using the model and save results in LabelMe format.
         
-        logger.info(f"Found {len(image_files)} image files in {input_folder}")
-        
-        # Process each image
-        for image_path in image_files:
-            logger.info(f"Processing {image_path.name}...")
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Validate arguments first
+            if not self._validate_args():
+                self.m_logger.error("Argument validation failed. Exiting.")
+                return False
             
-            # Use model to predict
-            predictions, class_names = predict_with_model(model_file, model_type, image_path)
+            # Get list of image files
+            image_files = getImageFilesBySuffixes(self.m_input_folder)
             
-            # Convert predictions to LabelMe format
-            labelme_data = convert_to_labelme_format(predictions, image_path, class_names, label_name)
+            if not image_files:
+                self.m_logger.warning(f"No image files found in {self.m_input_folder}")
+                return False
             
-            # Calculate relative path from input folder
-            relative_path = image_path.relative_to(input_folder)
+            self.m_logger.info(f"Found {len(image_files)} image files in {self.m_input_folder}")
             
-            # Create output path with same relative structure
-            output_path = output_folder / relative_path.with_suffix('.json')
+            # Process each image
+            for image_path in image_files:
+                self.m_logger.info(f"Processing {image_path.name}...")
+                
+                # Use model to predict
+                predictions, class_names = self._predict_with_model(image_path)
+                
+                # Convert predictions to LabelMe format
+                labelme_data = self._convert_to_labelme_format(predictions, image_path, class_names)
+                
+                # Calculate relative path from input folder
+                relative_path = image_path.relative_to(self.m_input_folder)
+                
+                # Create output path with same relative structure
+                output_path = self.m_output_folder / relative_path.with_suffix('.json')
+                
+                # Save LabelMe JSON
+                self._save_labelme_json(labelme_data, output_path)
             
-            # Save LabelMe JSON
-            save_labelme_json(labelme_data, output_path)
-        
-        logger.info(f"Processed {len(image_files)} images")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Error processing images in {input_folder}: {e}")
-        return False
+            self.m_logger.info(f"Processed {len(image_files)} images")
+            return True
+            
+        except Exception as e:
+            self.m_logger.error(f"Error processing images in {self.m_input_folder}: {e}")
+            return False
 
 
 def main():
@@ -333,14 +333,12 @@ def main():
     input_folder = Path(args.input_folder)
     output_folder = Path(args.output_folder)
     
-    # Validate arguments
-    if not validate_args(args):
-        logger.error("Argument validation failed. Exiting.")
-        return 1
+    # Create annotator instance
+    annotator = AutoAnnotator(str(model_file), args.model_type, input_folder, output_folder, args.label_name)
     
     # Process images
     logger.info("Starting auto annotation process...")
-    success = process_images(str(model_file), args.model_type, input_folder, output_folder, args.label_name)
+    success = annotator.process_images()
     
     if success:
         logger.info("Auto annotation process completed successfully.")
