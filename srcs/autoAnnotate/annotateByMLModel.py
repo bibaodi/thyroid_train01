@@ -97,13 +97,83 @@ class AutoAnnotator:
         
         return True
     
+    def _predict_detection(self, results) -> List[Dict[str, Any]]:
+        """
+        Process detection model results.
+        
+        Args:
+            results: Model prediction results
+            
+        Returns:
+            List of predictions
+        """
+        predictions = []
+        for result in results:
+            if hasattr(result, 'boxes'):
+                boxes = result.boxes
+                for box in boxes:
+                    # Extract box coordinates
+                    xyxy = box.xyxy[0].cpu().numpy()  # xyxy format
+                    class_id = int(box.cls[0].cpu().numpy())
+                    confidence = float(box.conf[0].cpu().numpy())
+                    
+                    # Convert to polygon format (rectangle)
+                    x1, y1, x2, y2 = xyxy
+                    polygon = [
+                        [float(x1), float(y1)],
+                        [float(x2), float(y1)],
+                        [float(x2), float(y2)],
+                        [float(x1), float(y2)]
+                    ]
+                    
+                    predictions.append({
+                        "class_id": class_id,
+                        "confidence": confidence,
+                        "polygon": polygon
+                    })
+        return predictions
+    
+    def _predict_segmentation(self, results) -> List[Dict[str, Any]]:
+        """
+        Process segmentation model results.
+        Args:
+            results: Model prediction results
+        Returns:
+            List of predictions
+        """
+        predictions = []
+        for result in results:
+            if hasattr(result, 'masks'):
+                masks = result.masks
+                boxes = result.boxes
+                
+                for i, mask in enumerate(masks):
+                    # Extract mask points - this gives the actual contour points
+                    mask_points = mask.xy[0]  # xy format
+                    
+                    # Get corresponding class and confidence
+                    class_id = int(boxes.cls[i].cpu().numpy()) if boxes is not None else 0
+                    confidence = float(boxes.conf[i].cpu().numpy()) if boxes is not None else 0.0
+                    
+                    # Convert to list of points
+                    # Ensure we have enough points for a proper polygon
+                    if len(mask_points) >= 3:  # Need at least 3 points for a polygon
+                        polygon = [[float(point[0]), float(point[1])] for point in mask_points]
+                        predictions.append({
+                            "class_id": class_id,
+                            "confidence": confidence,
+                            "polygon": polygon
+                        })
+                    else:
+                        self.m_logger.warning(f"Skipping mask with insufficient points: {len(mask_points)}")
+        return predictions
+    
+
     def _predict_with_model(self, image_path: Path) -> tuple[List[Dict[str, Any]], Dict[int, str]]:
         """
         Use the model to predict annotations for an image.
-        
         Args:
             image_path: Path to the image file
-            
         Returns:
             Tuple of (predictions, class_names)
         """
@@ -123,65 +193,46 @@ class AutoAnnotator:
             # Perform prediction
             results = model(str(image_path))
             
-            # Process results
-            predictions = []
-            for result in results:
-                # Get boxes or masks depending on model type
-                if self.m_model_type == "detection" and hasattr(result, 'boxes'):
-                    boxes = result.boxes
-                    for box in boxes:
-                        # Extract box coordinates
-                        xyxy = box.xyxy[0].cpu().numpy()  # xyxy format
-                        class_id = int(box.cls[0].cpu().numpy())
-                        confidence = float(box.conf[0].cpu().numpy())
-                        
-                        # Convert to polygon format (rectangle)
-                        x1, y1, x2, y2 = xyxy
-                        polygon = [
-                            [float(x1), float(y1)],
-                            [float(x2), float(y1)],
-                            [float(x2), float(y2)],
-                            [float(x1), float(y2)]
-                        ]
-                        
-                        predictions.append({
-                            "class_id": class_id,
-                            "confidence": confidence,
-                            "polygon": polygon
-                        })
-                elif self.m_model_type == "segmentation" and hasattr(result, 'masks'):
-                    masks = result.masks
-                    boxes = result.boxes
-                    
-                    for i, mask in enumerate(masks):
-                        # Extract mask points - this gives the actual contour points
-                        mask_points = mask.xy[0]  # xy format
-                        
-                        # Get corresponding class and confidence
-                        class_id = int(boxes.cls[i].cpu().numpy()) if boxes is not None else 0
-                        confidence = float(boxes.conf[i].cpu().numpy()) if boxes is not None else 0.0
-                        
-                        # Convert to list of points
-                        # Ensure we have enough points for a proper polygon
-                        if len(mask_points) >= 3:  # Need at least 3 points for a polygon
-                            polygon = [[float(point[0]), float(point[1])] for point in mask_points]
-                            
-                            predictions.append({
-                                "class_id": class_id,
-                                "confidence": confidence,
-                                "polygon": polygon
-                            })
-                        else:
-                            self.m_logger.warning(f"Skipping mask with insufficient points: {len(mask_points)}")      
+            # Process results based on model type
+            if self.m_model_type == "detection":
+                predictions = self._predict_detection(results)
+            elif self.m_model_type == "segmentation":
+                predictions = self._predict_segmentation(results)
+            else:
+                self.m_logger.error(f"Invalid model type: {self.m_model_type}")
+                return [], {}
+            
             self.m_logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
             return predictions, class_names
             
         except Exception as e:
             self.m_logger.error(f"Error during prediction for {image_path.name}: {e}")
             return [], {}
+
+    def _load_existing_lbmejson(self, json_path: Path) -> List[Dict[str, Any]]:
+        """
+        Load existing shapes from a JSON file if it exists.
+        Args:
+            json_path: Path to the JSON file
+            
+        Returns:
+            List of existing shapes, or empty list if file doesn't exist or is invalid
+        """
+        if not json_path.exists():
+            return []
+        
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                jsonObj = json.load(f)
+                if isinstance(jsonObj, dict) and 'shapes' in jsonObj:
+                    return jsonObj
+        except Exception as e:
+            self.m_logger.warning(f"Could not load existing JSON file {json_path}: {e}")
+        
+        return []
     
     def _convert_to_labelme_format(self, predictions: List[Dict[str, Any]], image_path: Path, 
-                                  class_names: Dict[int, str]) -> Dict[str, Any]:
+                                  class_names: Dict[int, str], output_path: Path) -> Dict[str, Any]:
         """
         Convert model predictions to LabelMe JSON format.
         
@@ -189,6 +240,7 @@ class AutoAnnotator:
             predictions: List of predictions from the model
             image_path: Path to the original image file
             class_names: Dictionary mapping class IDs to class names from the model
+            output_path: Path where the JSON file should be saved
             
         Returns:
             Dictionary in LabelMe JSON format
@@ -196,38 +248,43 @@ class AutoAnnotator:
         try:
             # Create a new LabelMe JSON object
             labelme_data = getOneTargetObj()
+            # Load existing shapes if file exists
+            existingJsonObj = self._load_existing_lbmejson(output_path)
             
-            # Clear existing shapes
-            labelme_data["shapes"].clear()
-            
-            # Set image path
-            labelme_data["imagePath"] = image_path.name
-            
-            # Set image data to None (will be loaded by LabelMe when needed)
-            labelme_data["imageData"] = None
+            # Set shapes to existing shapes if any
+            if existingJsonObj:
+                labelme_data = existingJsonObj
+                existingShapes = existingJsonObj["shapes"]
+                self.m_logger.info(f"Loaded {len(existingShapes)} existing shapes from {output_path}")
+            else:
+                self.m_logger.info(f"NO existing shapes from {output_path}, will create new one")
+                # Clear existing shapes only if no existing file
+                labelme_data["shapes"].clear()            
+                # Set image path
+                labelme_data["imagePath"] = image_path.name
+                # Set image data to None (will be loaded by LabelMe when needed)
+                labelme_data["imageData"] = None
+            shapesInJson = labelme_data["shapes"]
             
             # Add predictions as shapes
             for pred in predictions:
-                shape = getOneShapeObj()
-                
+                oneshape = getOneShapeObj()
                 # Set label based on priority:
                 # 1. Use m_label_name if provided
                 # 2. Use class name from model if available
                 # 3. Use class_id as fallback
+                shape_labelname='objLabelName'
                 if self.m_label_name:
-                    shape["label"] = self.m_label_name
+                    shape_labelname = self.m_label_name
                 elif class_names and pred['class_id'] in class_names:
-                    shape["label"] = class_names[pred['class_id']]
+                    shape_labelname = class_names[pred['class_id']]
                 else:
-                    shape["label"] = f"class_{pred['class_id']}"
-                
-                # Set points
-                shape["points"] = pred["polygon"]
-                
-                # Add to shapes
-                labelme_data["shapes"].append(shape)
+                    shape_labelname = f"class_{pred['class_id']}"
+                oneshape["label"] = shape_labelname
+                oneshape["points"] = pred["polygon"]
+                shapesInJson.append(oneshape)
             
-            self.m_logger.info(f"Converted {len(predictions)} predictions to LabelMe format for {image_path.name}")
+            self.m_logger.info(f"Converted {len(predictions)} {shape_labelname} predictions to LabelMe format for {image_path.name}")
             return labelme_data
             
         except Exception as e:
@@ -289,14 +346,14 @@ class AutoAnnotator:
                 # Use model to predict
                 predictions, class_names = self._predict_with_model(image_path)
                 
-                # Convert predictions to LabelMe format
-                labelme_data = self._convert_to_labelme_format(predictions, image_path, class_names)
-                
                 # Calculate relative path from input folder
                 relative_path = image_path.relative_to(self.m_input_folder)
                 
                 # Create output path with same relative structure
                 output_path = self.m_output_folder / relative_path.with_suffix('.json')
+                
+                # Convert predictions to LabelMe format
+                labelme_data = self._convert_to_labelme_format(predictions, image_path, class_names, output_path)
                 
                 # Save LabelMe JSON
                 self._save_labelme_json(labelme_data, output_path)
