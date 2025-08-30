@@ -16,7 +16,6 @@ import argparse
 import json
 import os
 import sys
-import logging
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -28,7 +27,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import project utilities
 from utils.glog import initLogger, get_logger
-from annotationFormatConverter.LabelmeJson import getOneTargetObj, getOneShapeObj, getImageFilesBySuffixes
+from annotationFormatConverter.LabelmeJson import getOneTargetObj, getOneShapeObj, getImageFilesBySuffixes, process_polygon_points
 
 # Try to import YOLO
 try:
@@ -313,8 +312,19 @@ class AutoAnnotator:
         
         return []
     
+    def _get_labelName(self, pred_class_id:str, class_names: Dict[int, str]) -> str:
+        shape_labelname='objLabelName'
+        if self.m_label_name:
+            shape_labelname = self.m_label_name
+        elif class_names and pred_class_id in class_names:
+            shape_labelname = class_names[pred_class_id]
+        else:
+            shape_labelname = f"class_{pred_class_id}"
+            
+        return shape_labelname
+    
     def _convert_to_labelme_format(self, predictions: List[Dict[str, Any]], image_path: Path, 
-                                  class_names: Dict[int, str], output_path: Path) -> Dict[str, Any]:
+                              class_names: Dict[int, str], output_path: Path) -> Dict[str, Any]:
         """
         Convert model predictions to LabelMe JSON format.
         
@@ -355,15 +365,11 @@ class AutoAnnotator:
                 # 1. Use m_label_name if provided
                 # 2. Use class name from model if available
                 # 3. Use class_id as fallback
-                shape_labelname='objLabelName'
-                if self.m_label_name:
-                    shape_labelname = self.m_label_name
-                elif class_names and pred['class_id'] in class_names:
-                    shape_labelname = class_names[pred['class_id']]
-                else:
-                    shape_labelname = f"class_{pred['class_id']}"
+                shape_labelname=self._get_labelName(pred['class_id'], class_names)
                 oneshape["label"] = shape_labelname
-                oneshape["points"] = pred["polygon"]
+                # Process points to ensure integer coordinates and no negative values
+                oneshape["points"] = process_polygon_points(pred["polygon"])
+                
                 # check if shape already exist
                 if isDuplicateShape(oneshape, shapesInJson, dice_threshold=0.8):
                     self.m_logger.debug(f"Skipped duplicate shape: {shape_labelname}")
@@ -494,3 +500,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
