@@ -38,6 +38,88 @@ except ImportError:
     YOLO_AVAILABLE = False
     get_logger().fatal("WARNING: ultralytics package not found. YOLO models will not be available.")
 
+def calculate_dice_similarity(points1: List[List[float]], points2: List[List[float]]) -> float:
+    """
+    Calculate DICE similarity between two polygon shapes.
+    
+    Args:
+        points1: First polygon points
+        points2: Second polygon points
+        
+    Returns:
+        float: DICE similarity coefficient (0.0 to 1.0)
+    """
+    if not points1 or not points2:
+        return 0.0
+    
+    try:
+        # Convert points to numpy arrays
+        poly1 = np.array(points1, dtype=np.int32)
+        poly2 = np.array(points2, dtype=np.int32)
+        
+        # Create blank masks
+        # Determine the bounding box for both polygons
+        all_points = np.concatenate([poly1, poly2])
+        min_x, min_y = np.min(all_points, axis=0)
+        max_x, max_y = np.max(all_points, axis=0)
+        
+        # Create masks with some padding
+        width = max_x - min_x + 20
+        height = max_y - min_y + 20
+        
+        mask1 = np.zeros((height, width), dtype=np.uint8)
+        mask2 = np.zeros((height, width), dtype=np.uint8)
+        
+        # Adjust points relative to the bounding box
+        adjusted_poly1 = poly1 - [min_x - 10, min_y - 10]
+        adjusted_poly2 = poly2 - [min_x - 10, min_y - 10]
+        
+        # Draw polygons on masks
+        cv2.fillPoly(mask1, [adjusted_poly1], 1)
+        cv2.fillPoly(mask2, [adjusted_poly2], 1)
+        
+        # Calculate DICE coefficient
+        intersection = np.sum(mask1 * mask2)
+        area1 = np.sum(mask1)
+        area2 = np.sum(mask2)
+        
+        if area1 + area2 == 0:
+            return 0.0
+            
+        dice = 2 * intersection / (area1 + area2)
+        return dice
+        
+    except Exception as e:
+        return 0.0
+        
+def isDuplicateShape(new_shape: Dict[str, Any], existing_shapes: List[Dict[str, Any]], 
+                    dice_threshold: float = 0.8) -> bool:
+    """
+    Check if a new shape is a duplicate of any existing shape using DICE similarity.
+    
+    Args:
+        new_shape: New shape to check
+        existing_shapes: List of existing shapes
+        dice_threshold: DICE similarity threshold for considering shapes as duplicates (default: 0.8)
+        
+    Returns:
+        bool: True if duplicate found, False otherwise
+    """
+    new_points = new_shape.get("points", [])
+    
+    for existing_shape in existing_shapes:
+        # Check if labels match
+        if new_shape.get("label") != existing_shape.get("label"):
+            continue
+            
+        existing_points = existing_shape.get("points", [])
+        
+        # Calculate DICE similarity
+        dice_score = calculate_dice_similarity(new_points, existing_points)
+        # If similarity exceeds threshold, consider it a duplicate
+        if dice_score >= dice_threshold:
+            return True
+    return False
 
 class AutoAnnotator:
     """Class to handle automatic annotation of images using YOLO models."""
@@ -265,7 +347,7 @@ class AutoAnnotator:
                 # Set image data to None (will be loaded by LabelMe when needed)
                 labelme_data["imageData"] = None
             shapesInJson = labelme_data["shapes"]
-            
+            added_shapes = 0
             # Add predictions as shapes
             for pred in predictions:
                 oneshape = getOneShapeObj()
@@ -282,9 +364,14 @@ class AutoAnnotator:
                     shape_labelname = f"class_{pred['class_id']}"
                 oneshape["label"] = shape_labelname
                 oneshape["points"] = pred["polygon"]
-                shapesInJson.append(oneshape)
+                # check if shape already exist
+                if isDuplicateShape(oneshape, shapesInJson, dice_threshold=0.8):
+                    self.m_logger.debug(f"Skipped duplicate shape: {shape_labelname}")
+                else:
+                    shapesInJson.append(oneshape)
+                    added_shapes += 1
             
-            self.m_logger.info(f"Converted {len(predictions)} {shape_labelname} predictions to LabelMe format for {image_path.name}")
+            self.m_logger.info(f"Converted {added_shapes} new {shape_labelname} predictions to LabelMe format for {image_path.name} (skipped duplicates)")
             return labelme_data
             
         except Exception as e:
