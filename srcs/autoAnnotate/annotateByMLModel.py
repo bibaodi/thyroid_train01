@@ -18,6 +18,7 @@ import os
 import sys
 from pathlib import Path
 from typing import List, Dict, Any
+import threading, queue
 
 import cv2
 import numpy as np
@@ -476,6 +477,7 @@ def main():
     parser.add_argument('--input_folder', required=True, help='Path to the folder containing input images')
     parser.add_argument('--output_folder', required=True, help='Path to the folder where results should be saved')
     parser.add_argument('--label_name', default=None, help='Label name to use for all annotations (optional, uses model class names if available)')
+    parser.add_argument('--jobs', type=int, default=1, help='Number of parallel jobs for processing images (default: 1)')
     
     args = parser.parse_args()
     
