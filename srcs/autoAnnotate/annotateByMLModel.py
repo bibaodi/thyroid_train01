@@ -16,6 +16,7 @@ import argparse
 import json
 import os
 import sys
+import signal
 from pathlib import Path
 from typing import List, Dict, Any
 import threading, queue
@@ -124,6 +125,9 @@ def isDuplicateShape(new_shape: Dict[str, Any], existing_shapes: List[Dict[str, 
 
 class AutoAnnotator:
     """Class to handle automatic annotation of images using YOLO models."""
+    
+    # Class variable to handle exit signals
+    exit_event = threading.Event()
     
     def __init__(self, model_file: str, model_type: str, input_folder: Path, 
                  output_folder: Path, label_name: str = None, jobsCount: int = 1):
@@ -426,6 +430,11 @@ class AutoAnnotator:
         """
         try:
             for image_path in tqdm(image_paths, desc=f"Job{jobid}:Processing images", unit="image"):
+                # Check if we should exit
+                if AutoAnnotator.exit_event.is_set():
+                    self.m_logger.info(f"Thread {jobid} received exit signal, terminating...")
+                    return False
+                
                 self.m_logger.info(f"Processing {image_path.name}...")
                 # Use model to predict
                 predictions, class_names = self._predict_with_model(image_path)
@@ -481,7 +490,14 @@ class AutoAnnotator:
             # Wait for all jobsthreads to complete
             for i, ithread in enumerate(jobsthreads):
                 ithread.join()
-                self.m_logger.info(f"Thread {i+1} completed")
+                if AutoAnnotator.exit_event.is_set():
+                    self.m_logger.info(f"Thread {i+1} terminated due to exit signal")
+                else:
+                    self.m_logger.info(f"Thread {i+1} completed")
+            
+            if AutoAnnotator.exit_event.is_set():
+                self.m_logger.info("Processing interrupted by user signal")
+                return False
             
             self.m_logger.info(f"Processed {len(image_files)} images")
             return True
@@ -491,13 +507,22 @@ class AutoAnnotator:
             return False
 
 
-def main():
-    """
-    Main function to parse arguments and run the auto annotation process.
-    """
-    # Initialize logger
-    initLogger("auto_annotate")
+def signal_handler(signum, frame):
+    """Handle interrupt signals gracefully."""
     logger = get_logger()
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    AutoAnnotator.exit_event.set()
+
+
+def main():
+    """Main function to run the auto annotation tool."""   
+    # Initialize logger
+    logger = initLogger("auto_annotate")
+    logger.info("Auto Annotate Tool started")
+    
+    # Set up signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Auto annotate images using a CNN model')
@@ -527,7 +552,10 @@ def main():
         logger.info("Auto annotation process completed successfully.")
         return 0
     else:
-        logger.error("Auto annotation process failed.")
+        if AutoAnnotator.exit_event.is_set():
+            logger.info("Auto annotation process interrupted by user signal.")
+        else:
+            logger.error("Auto annotation process failed.")
         return 1
 
 
