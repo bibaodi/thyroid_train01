@@ -524,7 +524,13 @@ class LabelmeFormat2YOLOFormat:
             return -1
         self.outputYoloPath=outputYoloPath
 
-        casefolders = working_dir.iterdir()
+        # Check if working_dir has subdirectories
+        casefolders = [item for item in working_dir.iterdir() if item.is_dir()]
+        
+        # If no subdirectories, use working_dir itself
+        if not casefolders:
+            logger.info(f"working_dir={working_dir}")
+            casefolders = [working_dir]
 
         for icase in tqdm(casefolders, desc="PACS LabelmeFormat Converting2YOLO:"):
             icasepath=icase
