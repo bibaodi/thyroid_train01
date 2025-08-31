@@ -149,7 +149,25 @@ class AutoAnnotator:
         self.m_label_name = label_name
         self.m_jobsCount = jobsCount
         self.m_logger = get_logger()
-    
+        self._loadModel()
+
+    def _loadModel(self):
+        if YOLO_AVAILABLE:
+            try:
+                self.m_model = YOLO(self.m_model_file)
+                self.m_class_names = {}
+                if hasattr(self.m_model, 'names'):
+                    self.m_class_names = self.m_model.names
+                self.m_logger.info(f"Loaded model {self.m_model_file} with classNames: {self.m_class_names}")
+            except Exception as e:
+                self.m_logger.error(f"Error loading model {self.m_model_file}: {e}")
+                self.m_model = None
+                self.m_class_names = {}
+        else:
+            self.m_logger.fatal("WARNING: ultralytics package not found. YOLO models will not be available.")
+            self.m_model = None
+            self.m_class_names = {}
+
     def _validate_args(self) -> bool:
         """
         Validate initialization arguments.
@@ -266,21 +284,14 @@ class AutoAnnotator:
         Returns:
             Tuple of (predictions, class_names)
         """
-        if not YOLO_AVAILABLE:
-            self.m_logger.error("YOLO is not available. Cannot perform prediction.")
+        if not YOLO_AVAILABLE or self.m_model is None:
+            self.m_logger.error("YOLO is not available or model failed to load. Cannot perform prediction.")
             return [], {}
         
         try:
-            # Load the model
-            model = YOLO(self.m_model_file)
-            # Get class names if available
-            class_names = {}
-            if hasattr(model, 'names'):
-                class_names = model.names
-            self.m_logger.info(f"Loaded model {self.m_model_file} with classNames: {class_names}")
-            
+            # Use the pre-loaded model instead of loading it every time
             # Perform prediction
-            results = model.predict(str(image_path), verbose=False) # Add verbose=False here to suppress model predict messages)
+            results = self.m_model.predict(str(image_path), verbose=False)
             
             # Process results based on model type
             if self.m_model_type == "detection":
@@ -292,7 +303,7 @@ class AutoAnnotator:
                 return [], {}
             
             self.m_logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
-            return predictions, class_names
+            return predictions, self.m_class_names
             
         except Exception as e:
             self.m_logger.error(f"Error during prediction for {image_path.name}: {e}")
