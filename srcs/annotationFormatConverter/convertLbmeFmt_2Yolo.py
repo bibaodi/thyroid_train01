@@ -5,6 +5,7 @@
 # eton@250311 version:0.2, support no spreadsheet file.
 # eton@250314 version:0.3, support both detect and segment task data format. import log from glog.
 # eton@250820 version:0.4, support prefixStartWithFrm as option and refine usage;
+# eton@250831 version:0.5, support labelme multi obj to multi yolo label index, support no sub-folders, support limit float number to only 4 after point ;
 # yolo-segment: <class-index> <x1> <y1> <x2> <y2> ... <xn> <yn> ; range is (0,1)
 # yolo-detect: <class-index> <x> <y> <width> <height> ; range is (0,1)
 
@@ -227,6 +228,15 @@ class LabelmeFormat2YOLOFormat:
         else:
             logger.error(f"Err: exlfile not exist:{exlfile}, make reader as None.")
             self.m_spreadSheetReader = None
+        self.m_label_map = {}
+        self.m_label_counter = 0
+        self.m_sample_count = 0
+        self.m_max_samples_for_mapping = 100
+        
+    def _update_label_map(self, labelname):
+        if labelname not in self.m_label_map:
+            self.m_label_map[labelname] = self.m_label_counter
+            self.m_label_counter += 1
 
     def isDetectTask(self):
         return self.m_taskType == self.static_taskType_detect
@@ -355,8 +365,9 @@ class LabelmeFormat2YOLOFormat:
         txtname=filenameStemInYolo.replace(imgfileSuffix, '.txt')
         newLabelfilePath=outputYoloPath_txt.joinpath(txtname)
         with open(newLabelfilePath, 'w') as txtfp:
-            for oneRect in inLabelsList:
-                txtfp.write(' '.join(map(str, oneRect))+ '\n')
+            for oneLabelObj in inLabelsList:
+                formatted_numbers = [f'{num:.4f}' if isinstance(num, float) else str(num) for num in oneLabelObj]
+                txtfp.write(' '.join(formatted_numbers)+ '\n')
         logger.info(f"debug: end of file create {newImagePath}")
         return 0
 
@@ -415,6 +426,14 @@ class LabelmeFormat2YOLOFormat:
         for ishape, lbm_shapeItem in enumerate(lbm_shapes):
             lbm_pointsInOneShape=lbm_shapeItem["points"]
             lbm_classInOneShape=lbm_shapeItem["label"]
+            if self.m_sample_count < self.m_max_samples_for_mapping:
+                self._update_label_map(lbm_classInOneShape)
+                self.m_sample_count += 1
+            if lbm_classInOneShape not in self.m_label_map:
+                logger.fatal(f"Err: label not in map.[{lbm_classInOneShape}]")
+                return -1
+            class_idx=self.m_label_map.get(lbm_classInOneShape, -1)
+            
             pointCntInShape=len(lbm_pointsInOneShape)
             #print(f"\t{json_file} shape[{ishape}] has point in shape is: {pointCntInShape}.")
             if pointCntInShape < leastPointCount:
@@ -466,7 +485,7 @@ class LabelmeFormat2YOLOFormat:
                 BenignMalign3Class= matchedTRi #GetInfoFromExternalSpreadSheetFile.mapBethesda06ToBengNMalign(matchedTRi)
                 logger.info(f"matchedTRs={matchedTRs}, matchedTRi={matchedTRi}, BenignMalign3Class={BenignMalign3Class}") 
             else:
-                BenignMalign3Class=0
+                BenignMalign3Class=class_idx
                 if '1malign' in str(imagefolder).lower():
                     BenignMalign3Class=1
                 elif '0benign' in str(imagefolder).lower():
