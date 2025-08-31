@@ -140,7 +140,7 @@ class AutoAnnotator:
             input_folder: Path to the folder containing input images
             output_folder: Path to the folder where results should be saved
             label_name: Label name to use for all annotations (optional)
-            jobs: Number of parallel jobs for processing images
+            jobsCount: Number of parallel jobs for processing images
         """
         self.m_model_file = model_file
         self.m_model_type = model_type
@@ -149,16 +149,33 @@ class AutoAnnotator:
         self.m_label_name = label_name
         self.m_jobsCount = jobsCount
         self.m_logger = get_logger()
+        
+        # For single model approach (recommended)
+        self.m_model = None
+        self.m_class_names = {}
+        # For multiple models approach (optional)
+        self.m_models = {}
+        
+        # Load model(s)
         self._loadModel()
 
     def _loadModel(self):
+        """Load model(s) for inference."""
         if YOLO_AVAILABLE:
             try:
+                # Single model approach (recommended)
                 self.m_model = YOLO(self.m_model_file)
-                self.m_class_names = {}
                 if hasattr(self.m_model, 'names'):
                     self.m_class_names = self.m_model.names
                 self.m_logger.info(f"Loaded model {self.m_model_file} with classNames: {self.m_class_names}")
+                
+                # Multiple models approach (optional)
+                # Uncomment the following lines if you want separate models for each thread
+                # for i in range(self.m_jobsCount):
+                #     model = YOLO(self.m_model_file)
+                #     self.m_models[i] = model
+                # self.m_logger.info(f"Loaded {self.m_jobsCount} model instances")
+                
             except Exception as e:
                 self.m_logger.error(f"Error loading model {self.m_model_file}: {e}")
                 self.m_model = None
@@ -276,22 +293,32 @@ class AutoAnnotator:
         return predictions
     
 
-    def _predict_with_model(self, image_path: Path) -> tuple[List[Dict[str, Any]], Dict[int, str]]:
+    def _predict_with_model(self, image_path: Path, thread_id: int = None) -> tuple[List[Dict[str, Any]], Dict[int, str]]:
         """
         Use the model to predict annotations for an image.
         Args:
             image_path: Path to the image file
+            thread_id: Optional thread ID to use specific model instance
         Returns:
             Tuple of (predictions, class_names)
         """
-        if not YOLO_AVAILABLE or self.m_model is None:
+        if not YOLO_AVAILABLE or (not self.m_model and not self.m_models):
             self.m_logger.error("YOLO is not available or model failed to load. Cannot perform prediction.")
             return [], {}
         
         try:
-            # Use the pre-loaded model instead of loading it every time
+            # Select model based on approach
+            if thread_id is not None and thread_id in self.m_models:
+                # Use thread-specific model
+                model = self.m_models[thread_id]
+                class_names = self.m_class_names  # Class names are the same for all models
+            else:
+                # Use shared model (default approach)
+                model = self.m_model
+                class_names = self.m_class_names
+            
             # Perform prediction
-            results = self.m_model.predict(str(image_path), verbose=False)
+            results = model.predict(str(image_path), verbose=False)
             
             # Process results based on model type
             if self.m_model_type == "detection":
@@ -303,7 +330,7 @@ class AutoAnnotator:
                 return [], {}
             
             self.m_logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
-            return predictions, self.m_class_names
+            return predictions, class_names
             
         except Exception as e:
             self.m_logger.error(f"Error during prediction for {image_path.name}: {e}")
@@ -431,9 +458,10 @@ class AutoAnnotator:
 
     def process_images_inBatch(self, jobid:int, image_paths: List[Path]) -> bool:
         """
-        Process a ibatch of images using the model and save results in LabelMe format.
+        Process a batch of images using the model and save results in LabelMe format.
         
         Args:
+            jobid: Thread ID
             image_paths: List of image paths to process
             
         Returns:
@@ -447,8 +475,8 @@ class AutoAnnotator:
                     return False
                 
                 self.m_logger.info(f"Processing {image_path.name}...")
-                # Use model to predict
-                predictions, class_names = self._predict_with_model(image_path)
+                # Use model to predict (pass thread ID for separate models approach)
+                predictions, class_names = self._predict_with_model(image_path, jobid)
                 # Calculate relative path from input folder
                 relative_path = image_path.relative_to(self.m_input_folder)
                 # Create output path with same relative structure
@@ -463,7 +491,7 @@ class AutoAnnotator:
             return True
             
         except Exception as e:
-            self.m_logger.error(f"Error processing image ibatch: {e}")
+            self.m_logger.error(f"Error processing image batch: {e}")
             return False
 
     def process_images(self) -> bool:
