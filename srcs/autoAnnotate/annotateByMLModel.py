@@ -21,6 +21,7 @@ from typing import List, Dict, Any
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 # Add project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -265,14 +266,14 @@ class AutoAnnotator:
         try:
             # Load the model
             model = YOLO(self.m_model_file)
-            
             # Get class names if available
             class_names = {}
             if hasattr(model, 'names'):
                 class_names = model.names
+            self.m_logger.info(f"Loaded model {self.m_model_file} with classNames: {class_names}")
             
             # Perform prediction
-            results = model(str(image_path))
+            results = model.predict(str(image_path), verbose=False) # Add verbose=False here to suppress model predict messages)
             
             # Process results based on model type
             if self.m_model_type == "detection":
@@ -432,8 +433,8 @@ class AutoAnnotator:
             
             self.m_logger.info(f"Found {len(image_files)} image files in {self.m_input_folder}")
             
-            # Process each image
-            for image_path in image_files:
+            # Process each image with progress tracking
+            for image_path in tqdm(image_files, desc="Processing images", unit="image"):
                 self.m_logger.info(f"Processing {image_path.name}...")
                 
                 # Use model to predict
@@ -500,4 +501,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
