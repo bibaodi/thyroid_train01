@@ -126,7 +126,7 @@ class AutoAnnotator:
     """Class to handle automatic annotation of images using YOLO models."""
     
     def __init__(self, model_file: str, model_type: str, input_folder: Path, 
-                 output_folder: Path, label_name: str = None):
+                 output_folder: Path, label_name: str = None, jobsCount: int = 1):
         """
         Initialize the AutoAnnotator.
         
@@ -136,12 +136,14 @@ class AutoAnnotator:
             input_folder: Path to the folder containing input images
             output_folder: Path to the folder where results should be saved
             label_name: Label name to use for all annotations (optional)
+            jobs: Number of parallel jobs for processing images
         """
         self.m_model_file = model_file
         self.m_model_type = model_type
         self.m_input_folder = input_folder
         self.m_output_folder = output_folder
         self.m_label_name = label_name
+        self.m_jobsCount = jobsCount
         self.m_logger = get_logger()
     
     def _validate_args(self) -> bool:
@@ -411,7 +413,39 @@ class AutoAnnotator:
         except Exception as e:
             self.m_logger.error(f"Error saving LabelMe JSON to {output_path}: {e}")
             return False
-    
+
+    def process_images_inBatch(self, jobid:int, image_paths: List[Path]) -> bool:
+        """
+        Process a ibatch of images using the model and save results in LabelMe format.
+        
+        Args:
+            image_paths: List of image paths to process
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            for image_path in tqdm(image_paths, desc=f"Job{jobid}:Processing images", unit="image"):
+                self.m_logger.info(f"Processing {image_path.name}...")
+                # Use model to predict
+                predictions, class_names = self._predict_with_model(image_path)
+                # Calculate relative path from input folder
+                relative_path = image_path.relative_to(self.m_input_folder)
+                # Create output path with same relative structure
+                output_path = self.m_output_folder / relative_path.with_suffix('.json')
+
+                # Convert predictions to LabelMe format
+                labelme_data = self._convert_to_labelme_format(predictions, image_path, class_names, output_path)
+                
+                # Save LabelMe JSON
+                self._save_labelme_json(labelme_data, output_path)
+            
+            return True
+            
+        except Exception as e:
+            self.m_logger.error(f"Error processing image ibatch: {e}")
+            return False
+
     def process_images(self) -> bool:
         """
         Process all images in the input folder using the model and save results in LabelMe format.
@@ -433,25 +467,21 @@ class AutoAnnotator:
                 return False
             
             self.m_logger.info(f"Found {len(image_files)} image files in {self.m_input_folder}")
+
+            batch_size = max(1, len(image_files) // self.m_jobsCount)
+            batches = [image_files[i:i + batch_size] for i in range(0, len(image_files), batch_size)]
+            # Create and start jobsthreads
+            jobsthreads = []
+            for i, ibatch in enumerate(batches):
+                onethread = threading.Thread(target=self.process_images_inBatch, args=(i, ibatch,))
+                jobsthreads.append(onethread)
+                onethread.start()
+                self.m_logger.info(f"Started onethread {i+1} to process {len(ibatch)} images")
             
-            # Process each image with progress tracking
-            for image_path in tqdm(image_files, desc="Processing images", unit="image"):
-                self.m_logger.info(f"Processing {image_path.name}...")
-                
-                # Use model to predict
-                predictions, class_names = self._predict_with_model(image_path)
-                
-                # Calculate relative path from input folder
-                relative_path = image_path.relative_to(self.m_input_folder)
-                
-                # Create output path with same relative structure
-                output_path = self.m_output_folder / relative_path.with_suffix('.json')
-                
-                # Convert predictions to LabelMe format
-                labelme_data = self._convert_to_labelme_format(predictions, image_path, class_names, output_path)
-                
-                # Save LabelMe JSON
-                self._save_labelme_json(labelme_data, output_path)
+            # Wait for all jobsthreads to complete
+            for i, ithread in enumerate(jobsthreads):
+                ithread.join()
+                self.m_logger.info(f"Thread {i+1} completed")
             
             self.m_logger.info(f"Processed {len(image_files)} images")
             return True
@@ -487,7 +517,7 @@ def main():
     output_folder = Path(args.output_folder)
     
     # Create annotator instance
-    annotator = AutoAnnotator(str(model_file), args.model_type, input_folder, output_folder, args.label_name)
+    annotator = AutoAnnotator(str(model_file), args.model_type, input_folder, output_folder, args.label_name, args.jobs)
     
     # Process images
     logger.info("Starting auto annotation process...")
