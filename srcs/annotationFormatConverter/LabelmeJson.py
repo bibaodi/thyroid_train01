@@ -81,3 +81,22 @@ def getImageFileByJsonFile(json_file:pathlib.Path):
         if bindImgPath.is_file():
             break
     return bindImgPath
+  
+
+def process_polygon_points(polygon: List[List[float]]) -> List[List[int]]:
+    """
+    Process polygon points to ensure integer coordinates and non-negative values.
+    
+    Args:
+        polygon: List of points representing a polygon, each point is [x, y]
+        
+    Returns:
+        List of processed points with integer coordinates and no negative values
+    """
+    processed_points = []
+    for point in polygon:
+        # Convert to integer and ensure non-negative values
+        x = max(0, int(point[0]))
+        y = max(0, int(point[1]))
+        processed_points.append([x, y])
+    return processed_points
