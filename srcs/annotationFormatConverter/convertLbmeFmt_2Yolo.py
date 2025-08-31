@@ -216,23 +216,23 @@ class LabelmeFormat2YOLOFormat:
     static_taskType_segment=TaskType.Segment
     static_taskType_unsupport=TaskType.UNKNOWN
     def __init__(self, taskType:TaskType , exlfile:pathlib.Path, sheetName:str, selectColName:str, outputColName:str):
-        self.outputYoloPath=None
-        self.taskType = taskType
-        self.exlfile=exlfile if isinstance(exlfile, pathlib.Path) else pathlib.Path(exlfile)
-        self.sheetName=sheetName
-        self.selectColName=selectColName
-        self.outputColName=outputColName
-        if self.exlfile.is_file():
-            self.spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+        self.m_outputYoloPath=None
+        self.m_taskType = taskType
+        self.m_exlfile=exlfile if isinstance(exlfile, pathlib.Path) else pathlib.Path(exlfile)
+        self.m_sheetName=sheetName
+        self.m_selectColName=selectColName
+        self.m_outputColName=outputColName
+        if self.m_exlfile.is_file():
+            self.m_spreadSheetReader = GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
         else:
             logger.error(f"Err: exlfile not exist:{exlfile}, make reader as None.")
-            self.spreadSheetReader = None
+            self.m_spreadSheetReader = None
 
     def isDetectTask(self):
-        return self.taskType == self.static_taskType_detect
+        return self.m_taskType == self.static_taskType_detect
     
     def isSegmentTask(self):
-        return self.taskType == self.static_taskType_segment
+        return self.m_taskType == self.static_taskType_segment
 
     @staticmethod
     def rectFromPixelToYoloFormat_CenterXYWH_inPercent(rectInPos:list, imgWidth:int, imgHeight:int):
@@ -449,13 +449,13 @@ class LabelmeFormat2YOLOFormat:
                     break
             if False == noSpreadSheet:
                 matchKey = PacsCaseName_LabelmeCaseName_mapper.mapNameInLabelmeFmtToOriginAAccessionNum(caseNameinLblme)
-                exlfile=self.exlfile
-                selectColName=self.selectColName
-                outputColName=self.outputColName
-                sheetName=self.sheetName
+                exlfile=self.m_exlfile
+                selectColName=self.m_selectColName
+                outputColName=self.m_outputColName
+                sheetName=self.m_sheetName
 
                 spreadsheet_op_start = time.time()
-                spreadSheetReader = self.spreadSheetReader #GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
+                spreadSheetReader = self.m_spreadSheetReader #GetInfoFromExternalSpreadSheetFile(exlfile, sheetName, selectColName, outputColName)
                 matchedTRs=spreadSheetReader.extractAllMatchedFileName(exlfile,sheetName, selectColName, matchKey, outputColName)
                 spreadsheet_op_end = time.time()
                 logging.info(f"performance: Spreadsheet operation took {spreadsheet_op_end - spreadsheet_op_start:.4f} seconds")
