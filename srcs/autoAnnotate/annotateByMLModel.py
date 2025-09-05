@@ -359,6 +359,12 @@ class AutoAnnotator:
         return []
     
     def _get_labelName(self, pred_class_id:str, class_names: Dict[int, str]) -> str:
+        """
+        Set label based on priority:
+        # 1. Use m_label_name if provided
+        # 2. Use class name from model if available
+        # 3. Use class_id as fallback
+        """
         shape_labelname='objLabelName'
         if self.m_label_name:
             shape_labelname = self.m_label_name
@@ -404,14 +410,10 @@ class AutoAnnotator:
                 labelme_data["imageData"] = None
             shapesInJson = labelme_data["shapes"]
             added_shapes = 0
+            shape_labelname=self._get_labelName(pred['class_id'], class_names)
             # Add predictions as shapes
             for pred in predictions:
-                oneshape = getOneShapeObj()
-                # Set label based on priority:
-                # 1. Use m_label_name if provided
-                # 2. Use class name from model if available
-                # 3. Use class_id as fallback
-                shape_labelname=self._get_labelName(pred['class_id'], class_names)
+                oneshape = getOneShapeObj()                
                 oneshape["label"] = shape_labelname
                 # Process points to ensure integer coordinates and no negative values
                 oneshape["points"] = process_polygon_points(pred["polygon"])
@@ -427,7 +429,7 @@ class AutoAnnotator:
             return labelme_data
             
         except Exception as e:
-            self.m_logger.error(f"Error converting predictions to LabelMe format for {image_path.name}: {e}")
+            self.m_logger.error(f"Error converting predictions to LabelMe format for img={image_path.name}: {e}")
             return {}
     
     def _save_labelme_json(self, labelme_data: Dict[str, Any], output_path: Path) -> bool:
