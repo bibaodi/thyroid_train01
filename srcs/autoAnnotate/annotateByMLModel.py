@@ -221,7 +221,7 @@ class AutoAnnotator:
         
         return True
     
-    def _predict_detection(self, results) -> List[Dict[str, Any]]:
+    def _post_detection(self, results) -> List[Dict[str, Any]]:
         """
         Process detection model results.
         
@@ -232,9 +232,14 @@ class AutoAnnotator:
             List of predictions
         """
         predictions = []
+        if not results:
+            return predictions
+        
         for result in results:
             if hasattr(result, 'boxes'):
                 boxes = result.boxes
+                if boxes is None:
+                    continue
                 for box in boxes:
                     # Extract box coordinates
                     xyxy = box.xyxy[0].cpu().numpy()  # xyxy format
@@ -257,7 +262,7 @@ class AutoAnnotator:
                     })
         return predictions
     
-    def _predict_segmentation(self, results) -> List[Dict[str, Any]]:
+    def _post_segmentation(self, results) -> List[Dict[str, Any]]:
         """
         Process segmentation model results.
         Args:
@@ -266,10 +271,14 @@ class AutoAnnotator:
             List of predictions
         """
         predictions = []
+        if not results:
+            return predictions
         for result in results:
             if hasattr(result, 'masks'):
                 masks = result.masks
                 boxes = result.boxes
+                if masks is None:
+                    continue
                 
                 for i, mask in enumerate(masks):
                     # Extract mask points - this gives the actual contour points
@@ -305,36 +314,43 @@ class AutoAnnotator:
         if not YOLO_AVAILABLE or (not self.m_model and not self.m_models):
             self.m_logger.error("YOLO is not available or model failed to load. Cannot perform prediction.")
             return [], {}
-        
+        class_names = self.m_class_names  # Class names are the same for all models
         try:
             # Select model based on approach
-            if thread_id is not None and thread_id in self.m_models:
+            if self.m_jobsCount > 1 and thread_id is not None and thread_id in self.m_models:
                 # Use thread-specific model
-                model = self.m_models[thread_id]
-                class_names = self.m_class_names  # Class names are the same for all models
+                predModel = self.m_models[thread_id]
             else:
                 # Use shared model (default approach)
-                model = self.m_model
-                class_names = self.m_class_names
-            
+                predModel = self.m_model
+
             # Perform prediction
-            results = model.predict(str(image_path), verbose=False)
-            
-            # Process results based on model type
-            if self.m_model_type == "detection":
-                predictions = self._predict_detection(results)
-            elif self.m_model_type == "segmentation":
-                predictions = self._predict_segmentation(results)
-            else:
-                self.m_logger.error(f"Invalid model type: {self.m_model_type}")
-                return [], {}
-            
-            self.m_logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
-            return predictions, class_names
-            
+            results = predModel.predict(str(image_path), verbose=False)
         except Exception as e:
             self.m_logger.error(f"Error during prediction for {image_path.name}: {e}")
             return [], {}
+        
+        self.m_logger.debug(f"Raw prediction results: {type(results)}, len={len(results)}")
+        if not isinstance(results, list) or len(results)<1:
+            self.m_logger.warning(f"No predictions found for {image_path.name}")
+            return [], {}
+        
+        # Process results based on model type
+        if self.m_model_type == "detection":
+            self.m_logger.debug(f"process detection results: ")
+            predictions = self._post_detection(results)
+        elif self.m_model_type == "segmentation":
+            self.m_logger.debug(f"process segmentation results: ")
+            predictions = self._post_segmentation(results)
+            self.m_logger.debug(f"got segmentation predictions")
+        else:
+            self.m_logger.error(f"Invalid model type: {self.m_model_type}")
+            return [], {}
+        
+        self.m_logger.info(f"Predicted {len(predictions)} objects in {image_path.name}")
+        return predictions, class_names
+            
+
 
     def _load_existing_lbmejson(self, json_path: Path) -> List[Dict[str, Any]]:
         """
@@ -408,6 +424,7 @@ class AutoAnnotator:
                 labelme_data["imagePath"] = image_path.name
                 # Set image data to None (will be loaded by LabelMe when needed)
                 labelme_data["imageData"] = None
+            
             shapesInJson = labelme_data["shapes"]
             added_shapes = 0
 
