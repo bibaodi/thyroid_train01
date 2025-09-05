@@ -410,9 +410,10 @@ class AutoAnnotator:
                 labelme_data["imageData"] = None
             shapesInJson = labelme_data["shapes"]
             added_shapes = 0
-            shape_labelname=self._get_labelName(pred['class_id'], class_names)
+
             # Add predictions as shapes
             for pred in predictions:
+                shape_labelname=self._get_labelName(pred['class_id'], class_names)
                 oneshape = getOneShapeObj()                
                 oneshape["label"] = shape_labelname
                 # Process points to ensure integer coordinates and no negative values
@@ -424,8 +425,10 @@ class AutoAnnotator:
                 else:
                     shapesInJson.append(oneshape)
                     added_shapes += 1
-            
-            self.m_logger.info(f"Converted {added_shapes} new {shape_labelname} predictions to LabelMe format for {image_path.name} (skipped duplicates)")
+            if added_shapes > 0:
+                self.m_logger.info(f"Converted {added_shapes} new {shape_labelname} predictions to LabelMe format for {image_path.name} (skipped duplicates)")
+            else:
+                self.m_logger.info(f"NO predictions to LabelMe format for {image_path.name}")
             return labelme_data
             
         except Exception as e:
