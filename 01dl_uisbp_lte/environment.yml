@@ -1,0 +1,27 @@
+name: uisbp
+dependencies:
+  - python=3.6
+  - cython
+
+  # these dependencies will be installed with pip
+  - pip:
+    - numpy
+    - pandas
+    - scipy
+    - scikit-learn
+    - scikit-image
+    - matplotlib
+    - hdf5
+    - pip
+    - tqdm
+    - jupyter
+    - opencv-python
+    - h5py
+    - tensorflow-gpu==1.9
+    #- tensorflow-gpu==1.6 # do not compatiable with 'Deep Learning Base AMI (Ubuntu) 9.0 AMI'
+    #- tensorflow==1.6.0 use for CPU running
+    - keras == 2.1.6
+    - memory_profiler
+    - ruamel.yaml
+    - pyqt5
+    - labelme==3.16.2  #labelme==3.3.7 #keep the version --for shape_to_mask update from 3.3.7to3.16.2

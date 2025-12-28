@@ -1,0 +1,51 @@
+# config for mil/config.py
+# This is used for whole-image multi-label classification using MIL model
+wingspan:
+  print-config: True
+
+  common:
+    batch-size-train: 48
+    batch-size-test: 1
+    model-name: mil-multi-label-may-2018-sz-96
+    model-callable-name: mil_multi_label_sz_96 
+    num-checkpoints: 100
+    print-file: validation_model_selection_multi_label.txt
+  
+  dataset:
+    processed-data-path: # Specify data path
+    dataset-name: may
+    train-val-split: 0.2
+    train-val-split-seed: 0
+    input-scale: 255
+    scenario: subject
+    image-height: 96
+    image-width: 96
+    image-channels: 1
+    class-weights: [1.0, 1.0, 1.0, 1.0, 1.0]
+
+  device:
+    cuda-visible-devices: "0"
+    allow-soft-placement: true
+    log-device-placement: false 
+    allow-growth: true
+
+  output:
+    use-average-variables: False
+    train-info-period: 20 # In batches
+    test-info-period: 20 # In batches
+    train-sample-size: 1000
+    val-sample-size: 1000
+    train-period: 10 # In epochs
+    val-period: 10 # In epochs
+    save-period: 10 # In epochs
+    summary-period: 10  # In epochs
+
+  training:
+    num-epoch: 100
+    learning-rate: 1e-3
+    momentum: 0.99
+    opt-method: adam # {adam, sgd_momentum}
+    model-seed: 0
+    moving-average-decay: 0.9  
+    num-epochs-per-decay: 50
+    learning-rate-decay-factor: 0.1

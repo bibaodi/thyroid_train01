@@ -1,0 +1,90 @@
+YOLO Classification Dataset Structure
+=====================================
+
+BEFORE (Your Original Issue):
+------------------------------
+/path/to/dataset/
+├── class_0/
+│   ├── image1.jpg
+│   └── image2.jpg
+└── class_1/
+    ├── image3.jpg
+    └── image4.jpg
+
+❌ PROBLEM: YOLO looks for train/val/test subdirectories but finds class folders directly
+❌ ERROR: TypeError - NoneType passed to expanduser()
+
+
+AFTER (Fixed Structure):
+-------------------------
+/opt/dlami/nvme/yolo_format_dataset/
+├── train/                    ← YOLO finds this
+│   ├── class_0/             ← Benign (80% of training data)
+│   │   ├── 1.2.840.xxx.jpg
+│   │   ├── 1.2.840.yyy.jpg
+│   │   └── ... (5572 images)
+│   └── class_1/             ← Malignant (80% of training data)
+│       ├── 1.2.840.zzz.jpg
+│       └── ... (2388 images)
+│
+├── val/                      ← YOLO finds this for validation
+│   ├── class_0/             ← Benign (20% of training data)
+│   │   └── ... (1393 images)
+│   └── class_1/             ← Malignant (20% of training data)
+│       └── ... (597 images)
+│
+└── test/                     ← YOLO finds this for testing
+    ├── class_0/             ← Benign (verification dataset)
+    │   └── ... (XXX images)
+    └── class_1/             ← Malignant (verification dataset)
+        └── ... (XXX images)
+
+✅ SOLUTION: Proper YOLO structure with train/val/test splits
+✅ RESULT: YOLO training works correctly
+
+
+How It Works:
+-------------
+1. Training data (df_train_filtered):
+   - Automatically split 80/20 into train/ and val/
+   - Stratified split maintains class balance
+   - Creates: train/class_0/, train/class_1/, val/class_0/, val/class_1/
+
+2. Verification data (df_verify_filtered):
+   - Saved as test/ split (no further splitting)
+   - Creates: test/class_0/, test/class_1/
+
+3. YOLO Training:
+   model.train(data='/opt/dlami/nvme/yolo_format_dataset', ...)
+   - YOLO automatically finds train/ for training
+   - YOLO automatically finds val/ for validation
+   - YOLO can use test/ for final evaluation
+
+
+Function Calls in Code:
+------------------------
+# For training data (creates train/ and val/)
+save_images_in_yolo_format(
+    df_train_filtered,
+    train_dataImgRoot,
+    '/opt/dlami/nvme/yolo_format_dataset',
+    class_column='bom',
+    split_name='train',
+    val_split=0.2  # 80% train, 20% val
+)
+
+# For verification data (creates test/)
+save_images_in_yolo_format(
+    df_verify_filtered,
+    verify_image_root,
+    '/opt/dlami/nvme/yolo_format_dataset',
+    class_column='bom',
+    split_name='test',
+    val_split=0.0  # No split
+)
+
+
+Class Mapping:
+--------------
+BOM = 0 → class_0/ (Benign/良性)
+BOM = 1 → class_1/ (Malignant/恶性)

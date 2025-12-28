@@ -1,0 +1,13 @@
+10-datasets/
+21-candidate_table/
+srcs/runs/
+srcs/data/
+*sop4_training_creation.log
+*.zip
+*models/
+*.pt
+*.pth
+*.png
+#srcs
+**__pycache__/
+.marscode/
