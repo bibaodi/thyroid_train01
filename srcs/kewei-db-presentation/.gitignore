@@ -1,0 +1,10 @@
+# Ignore all files
+*
+
+# But don't ignore .py files
+!*.py
+!*.gitignore
+
+!*.md
+# Also don't ignore directories (so Git can traverse them)
+!*/
