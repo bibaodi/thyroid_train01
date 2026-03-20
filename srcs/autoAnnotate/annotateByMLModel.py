@@ -265,6 +265,10 @@ class AutoAnnotator:
         Returns:
             List of predictions
         """
+        if results is None:
+            self.m_logger.warning("Segmentation results are None")
+            return []
+            
         predictions = []
         for result in results:
             if hasattr(result, 'masks'):
@@ -336,6 +340,32 @@ class AutoAnnotator:
             self.m_logger.error(f"Error during prediction for {image_path.name}: {e}")
             return [], {}
 
+    def _is_valid_labelme_json(self, jsonObj: Any) -> bool:
+        """
+        Check if a JSON object is in valid LabelMe format.
+        
+        Args:
+            jsonObj: The JSON object to validate
+            
+        Returns:
+            bool: True if valid LabelMe format, False otherwise
+        """
+        # Check if it's a dictionary
+        if not isinstance(jsonObj, dict):
+            return False
+        
+        # Check required fields for LabelMe format
+        required_fields = ['shapes', 'imagePath']
+        for field in required_fields:
+            if field not in jsonObj:
+                return False
+        
+        # Validate shapes field
+        if not isinstance(jsonObj['shapes'], list):
+            return False
+        
+        return True
+    
     def _load_existing_lbmejson(self, json_path: Path) -> List[Dict[str, Any]]:
         """
         Load existing shapes from a JSON file if it exists.
@@ -351,12 +381,22 @@ class AutoAnnotator:
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 jsonObj = json.load(f)
-                if isinstance(jsonObj, dict) and 'shapes' in jsonObj:
+                if self._is_valid_labelme_json(jsonObj):
                     return jsonObj
+                else:
+                    self.m_logger.warning(f"Invalid LabelMe JSON format in {json_path}")
+                    # Remove invalid file
+                    try:
+                        json_path.unlink()
+                        self.m_logger.info(f"Removed invalid JSON file: {json_path}")
+                    except Exception as remove_error:
+                        self.m_logger.error(f"Failed to remove invalid JSON file {json_path}: {remove_error}")
         except Exception as e:
             self.m_logger.warning(f"Could not load existing JSON file {json_path}: {e}")
         
         return []
+    
+
     
     def _get_labelName(self, pred_class_id:str, class_names: Dict[int, str]) -> str:
         shape_labelname='objLabelName'
@@ -386,7 +426,7 @@ class AutoAnnotator:
         try:
             # Create a new LabelMe JSON object
             labelme_data = getOneTargetObj()
-            # Load existing shapes if file exists
+            # Load existing shapes if file exists (validation and cleanup handled inside)
             existingJsonObj = self._load_existing_lbmejson(output_path)
             
             # Set shapes to existing shapes if any
@@ -404,6 +444,7 @@ class AutoAnnotator:
                 labelme_data["imageData"] = None
             shapesInJson = labelme_data["shapes"]
             added_shapes = 0
+            shape_labelname = "unknown"  # Default value to prevent undefined variable error
             # Add predictions as shapes
             for pred in predictions:
                 oneshape = getOneShapeObj()
@@ -477,6 +518,12 @@ class AutoAnnotator:
                 self.m_logger.info(f"Processing {image_path.name}...")
                 # Use model to predict (pass thread ID for separate models approach)
                 predictions, class_names = self._predict_with_model(image_path, jobid)
+                
+                # Skip if no predictions found
+                if not predictions:
+                    self.m_logger.info(f"No predictions found for {image_path.name}, skipping JSON creation")
+                    continue
+                
                 # Calculate relative path from input folder
                 relative_path = image_path.relative_to(self.m_input_folder)
                 # Create output path with same relative structure
@@ -485,8 +532,11 @@ class AutoAnnotator:
                 # Convert predictions to LabelMe format
                 labelme_data = self._convert_to_labelme_format(predictions, image_path, class_names, output_path)
                 
-                # Save LabelMe JSON
-                self._save_labelme_json(labelme_data, output_path)
+                # Save LabelMe JSON only if we have valid data
+                if labelme_data and labelme_data.get("shapes"):
+                    self._save_labelme_json(labelme_data, output_path)
+                else:
+                    self.m_logger.info(f"No valid shapes to save for {image_path.name}, skipping JSON creation")
             
             return True
             
