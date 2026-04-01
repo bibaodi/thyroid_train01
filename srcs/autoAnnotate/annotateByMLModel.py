@@ -366,17 +366,19 @@ class AutoAnnotator:
         
         return True
     
-    def _load_existing_lbmejson(self, json_path: Path) -> List[Dict[str, Any]]:
+    def _load_existing_lbmejson(self, json_path: Path) -> Dict[str, Any]:
         """
-        Load existing shapes from a JSON file if it exists.
+        Load existing JSON object from a file if it exists.
         Args:
             json_path: Path to the JSON file
             
         Returns:
-            List of existing shapes, or empty list if file doesn't exist or is invalid
+            JSON object if file exists and is valid, empty dict otherwise
         """
+        empty_result = {}
+        
         if not json_path.exists():
-            return []
+            return empty_result
         
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
@@ -385,16 +387,24 @@ class AutoAnnotator:
                     return jsonObj
                 else:
                     self.m_logger.warning(f"Invalid LabelMe JSON format in {json_path}")
-                    # Remove invalid file
-                    try:
-                        json_path.unlink()
-                        self.m_logger.info(f"Removed invalid JSON file: {json_path}")
-                    except Exception as remove_error:
-                        self.m_logger.error(f"Failed to remove invalid JSON file {json_path}: {remove_error}")
+                    self._remove_invalid_json_file(json_path)
         except Exception as e:
             self.m_logger.warning(f"Could not load existing JSON file {json_path}: {e}")
         
-        return []
+        return empty_result
+    
+    def _remove_invalid_json_file(self, json_path: Path) -> None:
+        """
+        Safely remove an invalid JSON file.
+        
+        Args:
+            json_path: Path to the invalid JSON file
+        """
+        try:
+            json_path.unlink()
+            self.m_logger.info(f"Removed invalid JSON file: {json_path}")
+        except Exception as e:
+            self.m_logger.error(f"Failed to remove invalid JSON file {json_path}: {e}")
     
 
     
