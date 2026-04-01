@@ -1,0 +1,1000 @@
+ 1008  git status
+ 1009  git add ./
+ 1010  git commit -m "remove K.set_learning_phase(0), supress H5 warnings"
+ 1011  git push
+ 1012  python -c "import tensorflow as tf; print(tf.__version__); print(tf.config.list_physical_devices('GPU'))"
+ 1013  vim train_thynodu2.0_260317.sh 
+ 1014  vim scripts/train_segmentation_thyroid_tf2.py 
+ 1015  bash train_thynodu2.0_260317.sh 
+ 1016  KERAS_BACKEND=jax bash train_thynodu2.0_260317.sh 
+ 1017  git status
+ 1018  git diff uisbp/
+ 1019  python -c "a=[3,4,5]; print(a.index(4))"
+ 1020  git add uisbp/
+ 1021  git diff scripts/
+ 1022  git status
+ 1023  git add scripts/
+ 1024  git commit -m "work for tf2.21 on CPU"
+ 1025  git diff uisbp
+ 1026  ls -l
+ 1027  bash ./train_thynodu2.1_260319.sh 
+ 1028  ls ../
+ 1029  ls ../ai_pytorch2tflite/
+ 1030  realpath ../ai_pytorch2tflite/
+ 1031  realpath ../ai_pytorch2tflite/srcs/
+ 1032  ls ../ai_pytorch2tflite/srcs/
+ 1033  ls ../ai_pytorch2tflite/srcs/01-converter/
+ 1034  ls ../ai_pytorch2tflite/srcs/02-conv/
+ 1035  ls ../ai_pytorch2tflite/srcs/02-conv/test_litert_fix.py 
+ 1036  vim ../ai_pytorch2tflite/srcs/02-conv/test_litert_fix.py 
+ 1037  ls
+ 1038  git status
+ 1039  git diff scripts/
+ 1040  git status
+ 1041  git add docs/
+ 1042  ls .kiro/
+ 1043  ls .kiro/specs/
+ 1044  ls .kiro/specs/thyroid-model-evaluation/
+ 1045  ls /train/history_train/
+ 1046  ls /train/history_train/res_thyNoduGlandV30_mul_thyNoduGlandv02withEmpty_224_20260319T1450_sz224/
+ 1047  ls /train/history_train/res_thyNoduGlandV30_mul_thyNoduGlandv02withEmpty_224_20260319T1450_sz224/linknet18_32_0.5_multi_224/
+ 1048  find /train/history_train/res_thyNoduGlandV30_mul_thyNoduGlandv02withEmpty_224_20260319T* |grep pt
+ 1049  ls -l
+ 1050  vim train_thynodu2.1_260319.sh 
+ 1051  conda activate trainLinkNet18_env
+ 1052  bash train_thynodu2.1_260319.sh 
+ 1053  ping 192.168.0.241
+ 1054  find /train/history_train/res_thyNoduGlandV31_mul_thyNoduGlandv02withEmpty_224_20260319T1711_sz224/linknet18_32_0.5_multi_224
+ 1055  git status
+ 1056  git add train_thynodu2.0_260317.sh 
+ 1057  git add linknet-torch/
+ 1058  git add train_thynodu2.1_260317.sh 
+ 1059  git status
+ 1060  git add train_thynodu2.1_260319.sh 
+ 1061  git status
+ 1062  git add create_preprocessedData4thyGland+Nodu.sh 
+ 1063  git add scripts/train_segmentation_thyroid_tf2.py 
+ 1064  git branch
+ 1065  git checkout dev260319_migrateLinknet2Pytorch
+ 1066  git checkout -b dev260319_migrateLinknet2Pytorch
+ 1067  git status
+ 1068  git commit -m "support linknet on torch"
+ 1069  git push
+ 1070  git push --set-upstream origin dev260319_migrateLinknet2Pytorch
+ 1071  ls -l
+ 1072  rm res_thyNod2.2_4HH_mul_thyNoduGlandsz224_2026031* -r
+ 1073  ls -l
+ 1074  find /train/history_train/res_thyNoduGlandV31_mul_thyNoduGlandv02withEmpty_224_20260319T1711_sz224/linknet18_32_0.5_multi_224/x
+ 1075  ls -l
+ 1076  python test/eval_thyroid.py     --model /train/history_train/res_thyNoduGlandV31_mul_thyNoduGlandv02withEmpty_224_20260319T1711_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite     --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV01
+ 1077  vim test/readme-eval-thyroid.py
+ 1078  mv  test/readme-eval-thyroid.py test/readme-eval-thyroid.md
+ 1079  ls -l
+ 1080  python test/eval_thyroid.py     --model /train/history_train/res_thyNoduGlandV31_mul_thyNoduGlandv02withEmpty_224_20260319T1711_sz224/linknet18_32_0.5_multi_224/weights_best.pt     --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV01     --arch linknet18 --start-ch 32 --dropout 0.5
+ 1081  vim test/readme-eval-thyroid.md
+ 1082  ls ./eval_output/
+ 1083  vim ./eval_output/eval_summary.csv 
+ 1084  ls -l /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/
+ 1085  python test/eval_thyroid.py     --model /train/history_train/res_thyNoduGlandV31_mul_thyNoduGlandv02withEmpty_224_20260319T1711_sz224/linknet18_32_0.5_multi_224/weights_best.pt     --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV01     --arch linknet18 --start-ch 32 --dropout 0.5
+ 1086  ls eval_output/
+ 1087  ls eval_output/images/
+ 1088  xdg-open eval_output/images/
+ 1089  git status
+ 1090  vim .gitignore 
+ 1091  git status
+ 1092  git add .gitignore 
+ 1093  git add .kiro/
+ 1094  git add readme-evaluate-thyroid-pt_tflite.md 
+ 1095  git add test/
+ 1096  git status
+ 1097  git commit -m "support evaluate thyroid"
+ 1098  mv test/ model-evaluate
+ 1099  mv readme-evaluate-thyroid-pt_tflite.md ./model-evaluate/
+ 1100  cd model-evaluate/
+ 1101  vim readme.md 
+ 1102  ls -l
+ 1103  cd ..
+ 1104  git status
+ 1105  git add ./
+ 1106  git status
+ 1107  git commit -m "make folder name preciously"
+ 1108  git tag -l
+ 1109  git tag v260319-good -m "both linknet to torch and evaluate for thyroid supported"
+ 1110  git push --all
+ 1111  git checkout -b main
+ 1112  git checkout main
+ 1113  git status
+ 1114  git merge dev260319_migrateLinknet2Pytorch
+ 1115  git push
+ 1116  git push --set-upstream origin main
+ 1117  ls -l
+ 1118  history |less
+ 1119  ls eval_output/
+ 1120  ls -l
+ 1121  python model-evaluate/eval_thyroid.py  --model /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1711_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV01
+ 1122  xdg-open evalOut_xinmy_multi_260320T172745/
+ 1123  python model-evaluate/eval_thyroid.py  --model /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1711_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV01
+ 1124  python model-evaluate/eval_thyroid.py  --model /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1711_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV02
+ 1125  xdg-open ./evalOut_xinmy_multi_260320T173459/
+ 1126  vim docs/260320-eval-thyGlandNoduModel.md
+ 1127  echo 'python model-evaluate/eval_thyroid.py  --model /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1711_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV02' >> ./docs/260320-eval-thyGlandNoduModel.md 
+ 1128  mv /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1711_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1711_sz224/linknet18_32_0.5_multi_224/seg_thyNoduGland0.3_hh19_sz224.tflite 
+ 1129  git status
+ 1130  git branch
+ 1131  git checkout -b dev260320_makeBGAtLast_changeLabelName
+ 1132  git status
+ 1133  gitadd docs/
+ 1134  git add ./
+ 1135  git commit -m "change LabelMap not match error, make labels in expect sequence which I name label first letter is little"
+ 1136  git push
+ 1137  git push --set-upstream origin dev260320_makeBGAtLast_changeLabelName
+ 1138  mv /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1750_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1750_sz224/linknet18_32_0.5_multi_224/seg_thyNoduGland0.3_hh19_sz224.tflite
+ 1139  cat ./docs/260320-eval-thyGlandNoduModel.md 
+ 1140  python model-evaluate/eval_thyroid.py  --model /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1750_sz224/linknet18_32_0.5_multi_224/seg_thyNoduGland0.3_hh19_sz224.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV02
+ 1141  xdg-open ./evalOut_seg_thyNoduGland0.3_hh19_sz224_260320T180826/
+ 1142  cat /train/data/mul_thyNoduGlandv03withEmpty_224/np_data/labels.txt 
+ 1143  python model-evaluate/eval_thyroid.py  --model /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv03withEmpty_224_20260320T1750_sz224/linknet18_32_0.5_multi_224/seg_thyNoduGland0.3_hh19_sz224.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV02
+ 1144  ls -l 
+ 1145  xdg-open evalOut_seg_thyNoduGland0.3_hh19_sz224_260320T191227
+ 1146  history |
+ 1147  history |less
+ 1148  vim create_preprocessedData4thyGland+Nodu.sh 
+ 1149  bash create_preprocessedData4thyGland+Nodu.sh 
+ 1150  cat /train/data/mul_thyNoduGlandv04withEmpty_224/np_data/labels.txt 
+ 1151  vim train_thynodu2.1_260319.sh 
+ 1152  bash train_thynodu2.1_260319.sh 
+ 1153  python model-evaluate/eval_thyroid.py  --model res_thyNoGlV41_mul_thyNoduGlandv04withEmpty_224_20260320T1925_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV02
+ 1154  python model-evaluate/eval_thyroid.py  --model /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv04withEmpty_224_20260320T1925_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV02
+ 1155  ls -l
+ 1156  cp /train/data/mul_thyNoduGlandv04withEmpty_224/np_data/labels.txt 
+ 1157  cat /train/data/mul_thyNoduGlandv04withEmpty_224/np_data/labels.txt 
+ 1158  cat /train/data/mul_thyNoduGlandv02withEmpty_224/np_data/labels.txt 
+ 1159  vim create_preprocessedData4thyGland+Nodu.sh 
+ 1160  vim process_nodules_data.sh 
+ 1161  vim scripts/process_data.py 
+ 1162  vim create_preprocessedData4thyGland+Nodu.sh 
+ 1163  bash create_preprocessedData4thyGland+Nodu.sh 
+ 1164  echo 'python model-evaluate/eval_thyroid.py  --model ${_model} --test-dir /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/10-datas4ML/3-thyroid/001-thyroidTestSetV02' > eval-thyroid-model.sh
+ 1165  vim eval-thyroid-model.sh 
+ 1166  bash ./eval-thyroid-model.sh /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv05withEmpty_224_20260320T1954_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite
+ 1167  ls -l
+ 1168  cat /train/data/mul_thyNoduGlandv05withEmpty_224/np_data/labels.txt
+ 1169  vim eval-thyroid-model.sh 
+ 1170  git status
+ 1171  git add eval-thyroid-model.sh 
+ 1172  mv evalOut_* /tmp/
+ 1173  git add ./
+ 1174  git status
+ 1175  git commit -m "success finish train and eval thyroid data"
+ 1176  git push
+ 1177  git tag -l
+ 1178  git tag v260320-good
+ 1179  git push --tags
+ 1180  git checkout main
+ 1181  git merge dev260320_makeBGAtLast_changeLabelName
+ 1182  git push
+ 1183  vim docs/260323-addAugmentationWithAlbum4linknet.md
+ 1184  nvidia-smi 
+ 1185  vim eval-thyroid-model.sh 
+ 1186  bash eval-thyroid-model.sh  /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv05withEmpty_224_20260323T1054_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite
+ 1187  xdg-open .
+ 1188  bash eval-thyroid-model.sh  /train/history_train/res_thyNoGlAug_mul_thyNoduGlandv05withEmpty_224_20260323T1126_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite
+ 1189  vim eval-thyroid-model.sh 
+ 1190  bash eval-thyroid-model.sh  /train/history_train/res_thyNoGlAug_mul_thyNoduGlandv05withEmpty_224_20260323T1148_sz224/efficientnet_unet_32_0.5_multi_224/xinmy_multi.tflite
+ 1191  bash eval-thyroid-model.sh  /train/history_train/res_thyNoGlAug_mul_thyNoduGlandv05withEmpty_224_20260323T1333_sz224/linknet18_32_0.5_multi_224/xinmy_multi.tflite
+ 1192  vim eval-thyroid-model.sh 
+ 1193  bash eval-thyroid-model.sh  /train/history_train/res_thyNoGlAug_mul_thyNoduGlandv05withEmpty_224_20260323T1345_sz224/efficientnet_unet_32_0.5_multi_224/xinmy_multi.tflite
+ 1194  cp train_thynodu2.1_260319.sh train_thynoduEfficientUnet0.1_260323.sh
+ 1195  vim train_thynoduEfficientUnet0.1_260323.sh
+ 1196  bash eval-thyroid-model.sh  /train/history_train/res_thyNoGlAug_mul_thyNoduGlandv05withEmpty_224_20260323T1509_sz224/efficientnet_unet_32_0.3_multi_224/xinmy_multi.tflite
+ 1197  vim /tmp/v
+ 1198  LocalSend-1.17.0-linux-x86-64.AppImage 
+ 1199  exit
+ 1200  conda activate trainLinkNet18_env
+ 1201  ls -l
+ 1202  vim train_thynodu2.1_260319.sh 
+ 1203  vim create_preprocessedData4thyGland+Nodu.sh 
+ 1204  bash create_preprocessedData4thyGland+Nodu.sh 
+ 1205  cat create_preprocessedData4thyGland+Nodu.sh 
+ 1206  vim train_thynodu2.1_260319.sh 
+ 1207  bash train_thynodu2.1_260319.sh 
+ 1208  vim create_preprocessedData4thyGland+Nodu.sh 
+ 1209  vim process_nodules_data.sh 
+ 1210  vim create_preprocessedData4thyGland+Nodu.sh 
+ 1211  rm -r /train/data/mul_thyNoduGlandv03withEmpty_224
+ 1212  bash create_preprocessedData4thyGland+Nodu.sh 
+ 1213  bash train_thynodu2.1_260319.sh 
+ 1214  vim train_thynodu2.1_260319.sh 
+ 1215  bash train_thynodu2.1_260319.sh 
+ 1216  nvidia-smi 
+ 1217  bash train_thynodu2.1_260319.sh 
+ 1218  vim train_thynodu2.1_260319.sh 
+ 1219  bash train_thynodu2.1_260319.sh 
+ 1220  ls /train/data/mul_thyNoduGlandv05withEmpty_224/np_data/labels.txt 
+ 1221  cat /train/data/mul_thyNoduGlandv05withEmpty_224/np_data/labels.txt
+ 1222  xdg-open /train/data/
+ 1223  xdg-open /train/history_train/
+ 1224  LocalSend-1.17.0-linux-x86-64.AppImage 
+ 1225  git status
+ 1226  git checkout dev260323_addAugmentation
+ 1227  git checkout -b  dev260323_addAugmentation
+ 1228  LocalSend-1.17.0-linux-x86-64.AppImage 
+ 1229  vim train_thynodu2.1_260319.sh 
+ 1230  bash train_thynodu2.1_260319.sh 
+ 1231  uv pip install albumentations
+ 1232  pip install uv
+ 1233  uv pip install albumentations
+ 1234  bash train_thynodu2.1_260319.sh 
+ 1235  vim train_thynodu2.1_260319.sh 
+ 1236  vim linknet-torch/train_seg_thyroid_torch.py 
+ 1237  vim train_thynodu2.1_260319.sh 
+ 1238  bash train_thynodu2.1_260319.sh 
+ 1239  vim train_thynodu2.1_260319.sh 
+ 1240  vim linknet-torch/train_seg_thyroid_torch.py 
+ 1241  vim train_thynodu2.1_260319.sh 
+ 1242  bash train_thynodu2.1_260319.sh 
+ 1243  vim train_thynodu2.1_260319.sh 
+ 1244   linknet-torch/train_seg_thyroid_torch.py 
+ 1245  bash train_thynodu2.1_260319.sh 
+ 1246  nvidia-smi 
+ 1247  bash train_thynodu2.1_260319.sh 
+ 1248  vim train_thynodu2.1_260319.sh 
+ 1249  bash train_thynodu2.1_260319.sh 
+ 1250  vim train_thynoduEfficientUnet0.1_260323.sh 
+ 1251  bash train_thynoduEfficientUnet0.1_260323.sh 
+ 1252  git branch
+ 1253  git status
+ 1254  git add docs/
+ 1255  vim .gitignore 
+ 1256  git status
+ 1257  git add train_thynoduEfficientUnet0.1_260323.sh 
+ 1258  git diff linknet-torch/
+ 1259  git status
+ 1260  git diff linknet-torch/setup.py
+ 1261  git status
+ 1262  pip list|grep albu
+ 1263  vim linknet-torch/setup.py
+ 1264  git status
+ 1265  git add linknet-torch/
+ 1266  git add .gitignore 
+ 1267  git add train_thynodu2.1_260319.sh 
+ 1268  git commit -m "1. add albumentations; 2. add drop out and label_smoothing to make efficientNetUnet less sensitive;"
+ 1269  git push
+ 1270  git push --set-upstream origin dev260323_addAugmentation
+ 1271  git remote add ori-local git@192.168.0.244:sw/ml_dl2linknet.git
+ 1272  git rename ori-local ori-xin1
+ 1273  git remote rename ori-local ori-xin1
+ 1274  git remote add ori-xin1 git@192.168.0.244:sw/ml_dl2linknet.git
+ 1275  git push --set-upstream ori-xin1 --all
+ 1276  git push --set-upstream ori-xin1 --tags
+ 1277  git branch
+ 1278  git checkout main
+ 1279  git merge dev260323_addAugmentation
+ 1280  git push 
+ 1281  git push --set-upstream origin --ta
+ 1282  git tag -l
+ 1283  git tag v2.0.0-260323 -m "efficientUnet works well for thyroid gland + nodule only handheld 19 dataset"
+ 1284  git push --tags
+ 1285  git push -u ori-xin1 --tags
+ 1286  exit
+ 1287  cd /train/history_train/
+ 1288  cd res_thyNod2.2_4HH_mul_thyNoduGlandsz224_20260319T1005_sz224/linknet18_32_0.5_multi_224/
+ 1289  ls -l
+ 1290  cp xinmy_multi-raw.tflite ./seg_thyNoduGland0.1_hh5_sz224.tflite
+ 1291  realpath ./seg_thyNoduGland0.1_hh5_sz224.tflite 
+ 1292  ls -l
+ 1293  cat ../labels.txt 
+ 1294  df -h
+ 1295  ls -l
+ 1296  ls -l /train/history_train/
+ 1297  rm -r /train/history_train/res_thyNoGlV41_mul_thyNoduGlandv05withEmpty_224_20260323T1052_sz224/
+ 1298  nvidia-smi 
+ 1299  exit
+ 1300  ls -l
+ 1301  cd 00-srcs/
+ 1302  ls -l
+ 1303  cd ml_thyroid.01_etonTrainCodes/
+ 1304  code .
+ 1305  pwd
+ 1306  realpath srcs/autoAnnotate/annotateByMLModel.py 
+ 1307  conda env list
+ 1308  conda activate trainLinkNet18_env
+ 1309  ls
+ 1310  sudo apt update
+ 1311  sudo apt upgrade
+ 1312  nvidia-smi 
+ 1313  exit
+ 1314  cd /mnt/datas/42workspace/34-project_ML_data_models_UltrasoundIntelligence/
+ 1315  ls -l
+ 1316  cd 10-datas4ML/
+ 1317  ls -l
+ 1318  cd 3-thyroid/
+ 1319  ls -l
+ 1320  mkdir 260320-autoAnnotations
+ 1321  cd 260320-autoAnnotations/
+ 1322  mkdir test-inputs
+ 1323  cp ../001-thyroidTestSetV01/thyroid-gland+Nodu-hh-79.6.1.dcm_frms ./test-inputs/ -r
+ 1324  ls test-inputs/
+ 1325  vim 01-autolabel-gland.sh
+ 1326  ls
+ 1327  realpath ./test-inputs/
+ 1328  vim 01-autolabel-gland.sh
+ 1329  bash 01-autolabel-gland.sh
+ 1330  pip install -U torch torchvision
+ 1331  bash 01-autolabel-gland.sh
+ 1332  ls -l
+ 1333  ls o1/
+ 1334  vim auto_annotate_260320T140633.log 
+ 1335  ls test-inputs/thyroid-gland+Nodu-hh-79.6.1.dcm_frms/
+ 1336  vim 01-autolabel-gland.sh
+ 1337  bash 01-autolabel-gland.sh
+ 1338  ls o1/
+ 1339  cp ./test-inputs/thyroid-gland+Nodu-hh-79.6.1.dcm_frms/*.png ./o1/
+ 1340  labelme4eton.sh ./o1/
+ 1341  ls -l
+ 1342  ls o1/
+ 1343  mkdir o-fixed001testSet
+ 1344  ls -l
+ 1345  cat 01-autolabel-gland.sh 
+ 1346  vim 02-loop-autolabel-gland.sh
+ 1347  vim 02-loop-autolabel-gland_v2.sh
+ 1348  bash 02-loop-autolabel-gland_v2.sh ../001-thyroidTestSetV01 ./o2
+ 1349  vim 02-loop-autolabel-gland_v3.sh
+ 1350  bash 02-loop-autolabel-gland_v2.sh -c only ../001-thyroidTestSetV01 ./o2
+ 1351  bash 02-loop-autolabel-gland_v3.sh -c only ../001-thyroidTestSetV01 ./o2
+ 1352  ls -l
+ 1353  labelme4eton.sh ./o2/hh_noduleOnly-21.dcm_frms/
+ 1354  vim ./o2/hh_noduleOnly-21.dcm_frms/frm-0001.json 
+ 1355  ls o2/
+ 1356  ls o2/handheldGlandOnly67.1.1.dcm_frms/
+ 1357  labelme4eton.sh o2/handheldGlandOnly67.1.1.dcm_frms/
+ 1358  labelme4eton.sh o2/hh_noduleOnly-21.dcm_frms/
+ 1359  ls -l
+ 1360  vim auto_annotate_260320T150135.log 
+ 1361  bash 02-loop-autolabel-gland_v3.sh 
+ 1362  bash 02-loop-autolabel-gland_v3.sh -c 0
+ 1363  bash 02-loop-autolabel-gland_v3.sh -c no
+ 1364  bash 02-loop-autolabel-gland_v3.sh  ../001-thyroidTestSetV01 ./o2
+ 1365  labelme4eton.sh o2/hh_noduleOnly-21.dcm_frms/
+ 1366  vim o2/hh_noduleOnly-21.dcm_frms/frm-0001.
+ 1367  vim o2/hh_noduleOnly-21.dcm_frms/frm-0001.png 
+ 1368  vim o2/hh_noduleOnly-21.dcm_frms/frm-0001.json 
+ 1369  ls -l
+ 1370  vim 01-autolabel-gland.sh 
+ 1371  bash 01-autolabel-gland.sh 
+ 1372  vim 01-autolabel-gland.sh 
+ 1373  ls -l
+ 1374  vim auto_annotate_260320T155307.log
+ 1375  ls test-inputs/
+ 1376  realpath ../001-thyroidTestSetV01
+ 1377  vim auto_annotate_260320T155307.log
+ 1378  vim 01-autolabel-gland.sh 
+ 1379  bash 01-autolabel-gland.sh 
+ 1380  cp 
+ 1381  ls -l
+ 1382  rm o2/ -r
+ 1383  ls o-fixed001testSet/
+ 1384  bash 02-loop-autolabel-gland_v3.sh -c after ../001-thyroidTestSetV01 ./o4A
+ 1385  bash 02-loop-autolabel-gland_v3.sh -c after ./10-inputs/ ./o5-hhus/
+ 1386  ls -l
+ 1387  labelme4eton.sh o5-hhus/HHUS-01.dcm_frms/
+ 1388  l s-l
+ 1389  ls -l
+ 1390  vim 03-removeOrphanImagesNoJson.sh
+ 1391  cd ./o5-hhus/
+ 1392  ls
+ 1393  bash ../03-removeOrphanImagesNoJson.sh ./HHUS-11.dcm_frms/
+ 1394  bash ../03-removeOrphanImagesNoJson.sh ./HHUS-13.dcm_frms/
+ 1395  bash ../03-removeOrphanImagesNoJson.sh ./HHUS-16.dcm_frms/
+ 1396  bash ../03-removeOrphanImagesNoJson.sh ./HHUS-21.dcm_frms/
+ 1397  bash ../03-removeOrphanImagesNoJson.sh ./HHUS-22.dcm_frms/
+ 1398  bash ../03-removeOrphanImagesNoJson.sh ./HHUS-23.dcm_frms/
+ 1399  ls -l
+ 1400  cd ..
+ 1401  mv o5-hhus/ o5-autuAnnoGland-hhus
+ 1402  zip o5-autuAnnoGland-hhus.zip -r o5-autuAnnoGland-hhus/
+ 1403  ls -l
+ 1404  mkdir logs
+ 1405  mv ./*.log ./logs/
+ 1406  ls -l
+ 1407  bash 02-loop-autolabel-gland_v3.sh o5-autuAnnoGland-hhus/ o5-autuAnnoGland-hhus
+ 1408  ls -l
+ 1409  rm o5-autuAnnoGland-hhus -r
+ 1410  unzip o5-autuAnnoGland-hhus.zip 
+ 1411  ls -l
+ 1412  cp 02-loop-autolabel-gland_v3.sh ./11-loop-autolabel-nodule_v1.sh
+ 1413  vim 11-loop-autolabel-nodule_v1.sh 
+ 1414  bash 11-loop-autolabel-nodule_v1.sh o5-autuAnnoGland-hhus/ o5-autuAnnoGland-hhus
+ 1415  ls -l
+ 1416  ls 10-inputs/
+ 1417  cp 10-inputs/ ./o6-hhus-nodule -r
+ 1418  cd o6-hhus-nodule/
+ 1419  ls -l
+ 1420  vim ../05-remove-all-image-files.sh
+ 1421  bash ../05-remove-all-image-files.sh ./
+ 1422  du -sh ./
+ 1423  du -sh ../10-inputs/
+ 1424  ls
+ 1425  ls HHUS-01.dcm_frms/
+ 1426  h ../05-remove-all-image-files.sh ./
+ 1427  find ./ -type f ( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.bmp" -o -iname "*.tiff" -o -iname "*.tif" -o -iname "*.webp" -o -iname "*.svg" -o -iname "*.ico" -o -iname "*.heic" -o -iname "*.heif" -o -iname "*.raw" -o -iname "*.cr2" -o -iname "*.nef" ) -delete
+ 1428  find ./ -type f -iname "*.png" -delete
+ 1429  du -sh ../10-inputs/
+ 1430  vim ../05-remove-all-image-files.sh
+ 1431  bash ../05-remove-all-image-files.sh ./
+ 1432  du -sh ./
+ 1433  cd ..
+ 1434  bash 02-loop-autolabel-gland_v3.sh -c after ./o5-autuAnnoGland-hhus/ ./o6-hhus-nodule/
+ 1435  du -sh o6-hhus-nodule/
+ 1436  mv o6-hhus-nodule/ ../260320-thyroid_gland+Nodule_hh_N19
+ 1437  cd ..
+ 1438  rm 260318-thyroid_gland+Nodule_hh_N5.zip
+ 1439  zip 260320-thyroid_gland+Nodule_hh_N19.zip -r 260320-thyroid_gland+Nodule_hh_N19/ 
+ 1440  ls -l
+ 1441  bash ../../00-scripts4ai_ML/data-process/storeDataToS3_thyroid.sh ./260320-thyroid_gland+Nodule_hh_N19.zip 
+ 1442  ls
+ 1443  cd 260320-
+ 1444  cd 260320-thyroid_gland+Nodule_hh_N19/
+ 1445  ls -l
+ 1446  cp ../../scanEmptyV1.0/* ./ -ir
+ 1447  ls -l
+ 1448  mv testSet/* ./
+ 1449  ls -l
+ 1450  mv trainSet/* ./
+ 1451  rmdir testSet/
+ 1452  rmdir trainSet/
+ 1453  ls -l
+ 1454  pwd
+ 1455  exit
+ 1456  LocalSend-1.17.0-linux-x86-64.AppImage 
+ 1457  exit
+ 1458  feishu 
+ 1459  exit
+ 1460  man tmux
+ 1461  joplin 
+ 1462  exit
+ 1463  ynote-desktop 
+ 1464  exit
+ 1465  tmux
+ 1466  exit
+ 1467  ls -1
+ 1468  exit
+ 1469  cat models_infomations.json |jq .
+ 1470  exit
+ 1471  vim bug-01.md
+ 1472  ls -l
+ 1473  vim bug-01.md 
+ 1474  exit
+ 1475  sha1sum POCUS_v1.6.13.apk >> version-history.md 
+ 1476  vim version-history.md 
+ 1477  exit
+ 1478  ls old-versions/
+ 1479  mv ./carotid-1.mp4 screeingService-user-guide_carotid_v001.260320.mp4
+ 1480  md5sum screeingService-user-guide_thyroid_v001.260320.mp4
+ 1481  md5sum ./thyroid-1.mp4 
+ 1482  md5sum ./old-versions/screeingService-user-guide_thyroid_v001.260320.mp4
+ 1483  vim ./guidanceVideos_informationV2.json 
+ 1484  md5sum screeingService-user-guide_carotid_v001.260320.mp4 
+ 1485  vim ./guidanceVideos_informationV2.json 
+ 1486  mv screeingService-user-guide_carotid_v001.260320.mp4 ./screeingService-user-guide_carotid_v002.260326.mp4 
+ 1487  ls -l
+ 1488  bash ./uploadNewGuidance2S3.sh screeingService-user-guide_carotid_v002.260326.mp4 
+ 1489  bash ./updateS3GuidanceInfo_forApp.sh ./guidanceVideos_informationV2.json 
+ 1490  bash ./guidanceVideos_informationV2.json |jq .
+ 1491  cat ./guidanceVideos_informationV2.json 
+ 1492  md5sum ./screeingService-user-guide_carotid_v002.260326.mp4 
+ 1493  cp guidanceVideos_informationV2.json ./guidanceVideos_informationV3.json
+ 1494  mv guidanceVideos_information.json ./old-versions/
+ 1495  mv guidanceVideos_informationV1.json ./old-versions/
+ 1496  mv guidanceVideos_informationV2.json ./old-versions/
+ 1497  cat guidanceVideos_informationV3.json |grep md5
+ 1498  md5sum ./screeingService-user-guide_carotid_v002.260326.mp4 
+ 1499  md5sum ./old-versions/screeingService-user-guide_carotid_v001.260320.mp4 
+ 1500  md5sum ./old-versions/screeingService-user-guide_thyroid_v001.260320.mp4 
+ 1501  cd ..
+ 1502  ls -l
+ 1503  cd 40-releases/
+ 1504  ls -l
+ 1505  vim version-history.md 
+ 1506  mv ~/Downloads/POCUS_v1.6.12.apk ./
+ 1507  sha1sum ./POCUS_v1.6.12.apk >>version-history.md 
+ 1508  vim version-history.md 
+ 1509  xdg-open .
+ 1510  sudo apt install cmake
+ 1511  sudo apt autoremove
+ 1512  cpuid 
+ 1513  cpuid |less
+ 1514  cd ~/00-srcs/
+ 1515  ls
+ 1516  cd 22-demos/
+ 1517  mkdir avx2-demos
+ 1518  cd avx2-demos/
+ 1519  code .
+ 1520  kiro .
+ 1521  ls -l
+ 1522  ls
+ 1523  cd ..
+ 1524  ls
+ 1525  cd ../
+ 1526  ls -l
+ 1527  cd 00cfgs4etonWS/
+ 1528  ls
+ 1529  ls -l
+ 1530  mkdir learning
+ 1531  cd learning/
+ 1532  mkdir tech-demos
+ 1533  cd tech-demos/
+ 1534  cp ~/00-srcs/22-demos/avx2-demos/avx-demo ./ -r
+ 1535  ls -l
+ 1536  cd ..
+ 1537  git status
+ 1538  git add learning/
+ 1539  git status
+ 1540  git commit -m "add avx2 intrinsics usage"
+ 1541  git push
+ 1542  git remote -v
+ 1543  sudo vim /usr/local/bin/smart-copy.sh
+ 1544  sudo chown eton:eton /usr/local/bin/smart-copy.sh
+ 1545  sudo touch /usr/local/bin/smart-copy.sh
+ 1546  sudo chown eton:eton /usr/local/bin/smart-copy.sh
+ 1547  vim /usr/local/bin/smart-copy.sh
+ 1548  mktemp 
+ 1549  vim /usr/local/bin/smart-copy.sh
+ 1550  man mktemp 
+ 1551  mktemp "tmp.smartCopy.XXX"
+ 1552  mktemp "tmp.smartCopy.XXXXXX"
+ 1553  mktemp "tmp-smartCopy.XXXXXX"
+ 1554  vim /usr/local/bin/smart-copy.sh
+ 1555  nproc 
+ 1556  man np
+ 1557  man nproc 
+ 1558  nproc --ignore 2
+ 1559  man np
+ 1560  man nproc 
+ 1561  seq 1 10 | parallel -N 7 echo
+ 1562  sudo apt install parallel
+ 1563  seq 1 10 | parallel -N 7 echo
+ 1564  seq 1 10 | parallel echo
+ 1565  command -V parallel
+ 1566  vim /usr/local/bin/smart-copy.sh
+ 1567  cd ~/42workspace.link
+ 1568  ls -l
+ 1569  cd 31-project_handheldUS-APP_UltraSoundDevice/
+ 1570  ls -l
+ 1571  cd 08-references/
+ 1572  ls
+ 1573  mkdir feique-screening-service
+ 1574  cd feique-screening-service/
+ 1575  mv ../*.* ./
+ 1576  ls -l
+ 1577  cd ..
+ 1578  ls -l
+ 1579  cd chengdu-huisheng/
+ 1580  ls -l
+ 1581  bim readme.md
+ 1582  vim readme.md
+ 1583  xdg-open .
+ 1584  exit
+ 1585  vim memo.txt
+ 1586  echo ./*.pdf >>  memo.txt
+ 1587  vim memo.txt 
+ 1588  exit
+ 1589  mv ~/Downloads/POCUS_v1.6.15.apk ./
+ 1590  vim version-history.md 
+ 1591  sha1sum ./POCUS_v1.6.15.apk >> version-history.md 
+ 1592  vim version-history.md 
+ 1593  exit
+ 1594  mv ~/Pictures/Feishu20260327-164538.mp4 ./260327-screeingService-user-guide_carotid+Thyroid.mp4
+ 1595  exit
+ 1596  git status
+ 1597  cd codeInRuidongGitea/
+ 1598  git status
+ 1599  bash ./uploadNewGuidance2S3.sh ./screeingService-user-guide_thyroid_v001.260320.mp4 
+ 1600  cd ~/00-srcs/
+ 1601  ls
+ 1602  cd 33-carotid-webuis26/codeInRuidongGitea/
+ 1603  ls
+ 1604  git status
+ 1605  git pull
+ 1606  vim teleuisfc/app/muapi/v4/config.py 
+ 1607  git tag -l
+ 1608  git tag v0.2.2 -m "add guidance video download API"
+ 1609  git push --tags
+ 1610  identify ~/42workspace.link/44-dicoms/thyroid-nodule-size.dcm 
+ 1611  identify -verbose  ~/42workspace.link/44-dicoms/thyroid-nodule-size.dcm 
+ 1612  seq 1 10 | parallel --pipe -N 3 'echo "---"; cat'
+ 1613  seq 1 10 | parallel  -N 3 'echo "---"; cat'
+ 1614  seq 1 10 | parallel  -N 3 'echo "---"; echo'
+ 1615  git status
+ 1616  git diff teleuisfc/
+ 1617  git status
+ 1618  git branch -b dev260327_refineCodes
+ 1619  git checkout -b dev260327_refineCodes
+ 1620  git add teleuisfc/
+ 1621  git commit -m "1. add variable to make code shorter; 2. add condition to make it correct"
+ 1622  git push
+ 1623  git push --set-upstream origin dev260327_refineCodes
+ 1624  sudo dmesg -w
+ 1625  exit
+ 1626  avx-demo/build/avx_mv 2>&1
+ 1627  pip install nvidia-cuda-runtime-cu12 nvidia-cuda-nvcc-cu12 2>&1 | tail -10
+ 1628  find /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia -name "nvcc" -type f 2>/dev/null
+ 1629  find /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia/cuda_nvcc -type f -name "nvcc*" 2>/dev/null
+ 1630  ls /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia/cuda_nvcc/ 2>/dev/null
+ 1631  ls /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia/cuda_nvcc/bin/
+ 1632  ls /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia/cuda_nvcc/include/crt/host_config.h 2>/dev/null && ls /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia/cuda_runtime/include/cuda_runtime.h 2>/dev/null
+ 1633  rm -rf /mnt/datas/miniconda3/targets/x86_64-linux/include/*
+ 1634  cp -rsn /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia/cuda_runtime/include/* /mnt/datas/miniconda3/targets/x86_64-linux/include/ 2>&1
+ 1635  cp -rsn /mnt/datas/miniconda3/lib/python3.13/site-packages/nvidia/cuda_nvcc/include/* /mnt/datas/miniconda3/targets/x86_64-linux/include/ 2>&1
+ 1636  ls /mnt/datas/miniconda3/targets/x86_64-linux/nvvm/bin/cicc 2>/dev/null || echo "cicc missing"
+ 1637  find /mnt/datas/miniconda3 -name "cicc" -type f 2>/dev/null | head -5
+ 1638  ls /mnt/datas/miniconda3/nvvm/bin/cicc 2>/dev/null && ls /mnt/datas/miniconda3/nvvm/libdevice/ 2>/dev/null
+ 1639  cmake -B avx-demo/build -S avx-demo 2>&1
+ 1640  cmake --build avx-demo/build 2>&1
+ 1641  cmake -B avx-demo/build -S avx-demo 2>&1
+ 1642  cmake --build avx-demo/build 2>&1
+ 1643  avx-demo/build/avx_auto 2>&1
+ 1644  avx-demo/build/avx_intrinsics 2>&1
+ 1645  avx-demo/build/avx_dispatch 2>&1
+ 1646  which nvcc 2>&1 && nvcc --version 2>&1
+ 1647  cmake -B build 2>&1
+ 1648  cmake -B build -DCMAKE_CUDA_COMPILER=$(which nvcc) 2>&1
+ 1649  ls /usr/local/cuda*/bin/nvcc 2>/dev/null || ls /opt/cuda*/bin/nvcc 2>/dev/null || find /usr -name "cuda_runtime.h" 2>/dev/null | head -5
+ 1650  find /mnt/datas/miniconda3 -name "cuda_runtime.h" 2>/dev/null | head -5
+ 1651  conda list cuda-toolkit 2>/dev/null | tail -5
+ 1652  find /mnt/datas/miniconda3/targets -name "cuda_runtime.h" 2>/dev/null
+ 1653  ls /mnt/datas/miniconda3/targets/x86_64-linux/include/ 2>/dev/null | head -10
+ 1654  ls -la /mnt/datas/miniconda3/targets/ 2>/dev/null
+ 1655  ls -la /mnt/datas/miniconda3/targets/x86_64-linux/
+ 1656  ls /mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_runtime/include/ | head -10
+ 1657  CUDA_INC=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_runtime/include && ls "$CUDA_INC/cuda_runtime.h" 2>/dev/null && echo "---" && ls /mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/ | head -20
+ 1658  ls /mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_nvcc/bin/nvcc 2>/dev/null
+ 1659  find /mnt/datas/miniconda3/envs/trainLinkNet18_env -name "nvcc" -type f 2>/dev/null
+ 1660  CUDA_INCLUDE=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_runtime/include cmake -B build -DCMAKE_CUDA_COMPILER=/mnt/datas/miniconda3/bin/nvcc -DCMAKE_CUDA_FLAGS="--include-path=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_runtime/include" 2>&1
+ 1661  NVIDIA_PKG=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia && ls "$NVIDIA_PKG/cuda_runtime/include/crt/" 2>/dev/null | head -5
+ 1662  find /mnt/datas/miniconda3 -name "host_config.h" -path "*/crt/*" 2>/dev/null | head -5
+ 1663  NVCC_INC=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_nvcc/include && RUNTIME_INC=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_runtime/include && mkdir -p /mnt/datas/miniconda3/targets/x86_64-linux/include
+ 1664  NVCC_INC=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_nvcc/include && RUNTIME_INC=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_runtime/include && TARGET_INC=/mnt/datas/miniconda3/targets/x86_64-linux/include && cp -rsn "$RUNTIME_INC"/* "$TARGET_INC/" 2>&1
+ 1665  NVCC_INC=/mnt/datas/miniconda3/envs/trainLinkNet18_env/lib/python3.10/site-packages/nvidia/cuda_nvcc/include && TARGET_INC=/mnt/datas/miniconda3/targets/x86_64-linux/include && cp -rsn "$NVCC_INC"/* "$TARGET_INC/" 2>&1
+ 1666  ls /mnt/datas/miniconda3/targets/x86_64-linux/include/cuda_runtime.h /mnt/datas/miniconda3/targets/x86_64-linux/include/crt/host_config.h 2>&1
+ 1667  ls /mnt/datas/miniconda3/targets/x86_64-linux/lib/ 2>&1
+ 1668  rm -rf build
+ 1669  cmake -B build -DCMAKE_CUDA_COMPILER=/mnt/datas/miniconda3/bin/nvcc 2>&1
+ 1670  conda install -y -n base nvidia/label/cuda-12.9.0::cuda-toolkit 2>&1 | tail -20
+ 1671  rm -rf /mnt/datas/miniconda3/targets/x86_64-linux/include/*
+ 1672  pip uninstall -y nvidia-cuda-nvcc-cu12 2>&1
+ 1673  rm -rf build avx-demo/build
+ 1674  dpkg -l | grep -i cuda | head -20
+ 1675  apt list --installed 2>/dev/null | grep -i cuda
+ 1676  apt list --installed 2>/dev/null | grep -i nvidia
+ 1677  ls /usr/local/cuda*/bin/nvcc 2>/dev/null || ls /usr/bin/nvcc 2>/dev/null || echo "no system nvcc"
+ 1678  nvidia-smi 2>&1 | head -5
+ 1679  PATH=/usr/local/bin:/usr/bin:/bin cmake -B build 2>&1
+ 1680  cmake --build build 2>&1
+ 1681  rm -rf build
+ 1682  PATH=/usr/local/bin:/usr/bin:/bin cmake -B build -DCMAKE_LINKER=/usr/bin/ld 2>&1
+ 1683  PATH=/usr/local/bin:/usr/bin:/bin cmake --build build 2>&1
+ 1684  rm -rf build
+ 1685  cmake -B build 2>&1
+ 1686  rm -rf build
+ 1687  cmake -B build 2>&1
+ 1688  cmake --build build 2>&1
+ 1689  cd ../../00cfgs4etonWS/
+ 1690  ls -l
+ 1691  cd learning/
+ 1692  ls
+ 1693  cd tech-demos/
+ 1694  ls
+ 1695  cp ../../../22-demos/avx2-demos/* ./ -r
+ 1696  git status
+ 1697  cd ..
+ 1698  git status
+ 1699  rm ./tmp*
+ 1700  git status
+ 1701  git add learning/
+ 1702  git status
+ 1703  git commit -m "add cuda demo which combine by super-build of cmake"
+ 1704  git push
+ 1705  LocalSend-1.17.0-linux-x86-64.AppImage 
+ 1706  cd ..
+ 1707  ls -l
+ 1708  cd ..
+ 1709  ls -l
+ 1710  cd ../42workspace.link
+ 1711  ls
+ 1712  cd 31-project_handheldUS-APP_UltraSoundDevice/
+ 1713  ls -l
+ 1714  cd 08-references/
+ 1715  ls -l
+ 1716  cd chengdu-huisheng/
+ 1717  ls -k
+ 1718  ls -l
+ 1719  7z -h
+ 1720  7z x ./UProbeAndroidDemoSimple_aar_2026.03.24.7z 
+ 1721  ls -l
+ 1722  vim file-list
+ 1723  mkdir sdk-01
+ 1724  mv demo_app_* ./sdk-01/
+ 1725  md lib_* ./sdk-01/
+ 1726  mv lib_* ./sdk-01/
+ 1727  mv ultrasound/ ./sdk-01/
+ 1728  mv gradle/ ./sdk-01/
+ 1729  ls -l
+ 1730  ls -l|wc
+ 1731  cat file-list |wc
+ 1732  cat file-list 
+ 1733  cat file-list |cut -d ' '
+ 1734  cat file-list |cut -d '\ '
+ 1735  cat file-list |cut -d '\0'
+ 1736  cat file-list |cut 
+ 1737  cat file-list |cut -d ''
+ 1738  man cut
+ 1739  cat file-list |cut 
+ 1740  man cut
+ 1741  cat file-list 
+ 1742  tr -s '[:space:]' '\n' < file-list 
+ 1743  xargs -n 1 < file-list 
+ 1744  ls -l
+ 1745  mv sdk-01/ sdk-01.UProbeAndroidDemoSimple_aar_2026.03.24
+ 1746  cd sdk-01.UProbeAndroidDemoSimple_aar_2026.03.24/
+ 1747  ls -l
+ 1748  7z x ../UProbeAndroidDemoSimple_aar_2026.03.24.7z 
+ 1749  xdg-open .
+ 1750  cd ..
+ 1751  cd 33-project_webUSIS_UltraSoundWebService/
+ 1752  ls
+ 1753  ls -l
+ 1754  mkdir 40-configs
+ 1755  cd 40-configs/
+ 1756  ls
+ 1757  vim cors-crossOriginResourceSharing.json
+ 1758  aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration file://cors-*.json
+ 1759  ls ./cors-crossOriginResourceSharing.json 
+ 1760  aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration file://cors-crossOriginResourceSharing.json
+ 1761  cat ./cors-crossOriginResourceSharing.json |jq .
+ 1762  aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration '$(cat cors-crossOriginResourceSharing.json)'
+ 1763  cat cors-crossOriginResourceSharing.json 
+ 1764  aws s3api get-bucket-cors --bucket pdf-bucket
+ 1765  aws s3api get-bucket-cors --bucket yingling-s3test-storage
+ 1766  cat ./cors-crossOriginResourceSharing.json |aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration "file:///dev/stdin"
+ 1767  aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration "$(cat cors-crossOriginResourceSharing.json)"
+ 1768  cat ./cors-crossOriginResourceSharing.json|jq -c .  |aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration "file:///dev/stdin"
+ 1769  cat ./cors-crossOriginResourceSharing.json 
+ 1770  aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration '[
+ 1771      {
+ 1772          "AllowedHeaders": ["*"],
+ 1773          "AllowedMethods": ["GET", "HEAD"],
+ 1774          "AllowedOrigins": [
+ 1775              "https://api.jishimed.com",
+ 1776              "https://apitest.jishimed.com"
+ 1777          ],
+ 1778          "ExposeHeaders": [
+ 1779              "Content-Length",
+ 1780              "Content-Range",
+ 1781              "Accept-Ranges"
+ 1782          ],
+ 1783          "MaxAgeSeconds": 3600
+ 1784      }
+ 1785  ]'
+ 1786  aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration '[{"AllowedHeaders":["*"],"AllowedMethods":["GET","HEAD"],"AllowedOrigins":["https://api.jishimed.com","https://apitest.jishimed.com"],"ExposeHeaders":["Content-Length","Content-Range","Accept-Ranges"],"MaxAgeSeconds":3600}]'
+ 1787  cat ./cors-crossOriginResourceSharing.json|jq -c .  |aws s3api put-bucket-cors --bucket pdf-bucket --cli-input-json "file:///dev/stdin"
+ 1788  ls cors-crossOriginResourceSharing.json 
+ 1789  aws s3api put-bucket-cors --bucket pdf-bucket --cli-input-json file://cors-crossOriginResourceSharing.json
+ 1790  vim cors-crossOriginResourceSharing.json 
+ 1791   cors-crossOriginResourceSharing-put.json 
+ 1792  cat ./cors-crossOriginResourceSharing-put.json|jq -c .  |aws s3api put-bucket-cors --bucket pdf-bucket --cors-configuration "file:///dev/stdin"
+ 1793  exit
+ 1794  cd ..
+ 1795  cd ../31-project_handheldUS-APP_UltraSoundDevice/
+ 1796  ls -l
+ 1797  mkdir 41-guidanceVideo_download
+ 1798  cd 41-guidanceVideo_download/
+ 1799  cp ../../34-project_ML_data_models_UltrasoundIntelligence/44-models/09-forUS.app_android_download/models_infomations.json ./
+ 1800  vim models_infomations.json 
+ 1801  cp ../../34-project_ML_data_models_UltrasoundIntelligence/44-models/09-forUS.app_android_download/modelsV2.8.8/presets.xml ./
+ 1802  cat presets.xml 
+ 1803  vim models_infomations.json 
+ 1804  cat models_infomations.json |jq .
+ 1805  vim models_infomations.json 
+ 1806  cat models_infomations.json |jq .
+ 1807  vim models_infomations.json 
+ 1808  cat models_infomations.json |jq .
+ 1809  vim models_infomations.json 
+ 1810  cat models_infomations.json |jq .
+ 1811  vim models_infomations.json 
+ 1812  cat models_infomations.json |jq .
+ 1813  vim models_infomations.json 
+ 1814  cat models_infomations.json |jq .
+ 1815  vim models_infomations.json 
+ 1816  cat models_infomations.json |jq . > guidanceVideos_information.json
+ 1817  vim models_infomations.json |jq .
+ 1818  vim models_infomations.json 
+ 1819  vim models_infomations.json |jq .
+ 1820  cat models_infomations.json |jq .
+ 1821  vim models_infomations.json 
+ 1822  cat models_infomations.json |jq .
+ 1823  vim models_infomations.json 
+ 1824  cat models_infomations.json |jq .
+ 1825  cat models_infomations.json |jq . >> guidanceVideos_information.json
+ 1826  vim guidanceVideos_information.json 
+ 1827  cat ./presets.xml 
+ 1828  vim guidanceVideos_information.json 
+ 1829  cp ../../33-project_webUSIS_UltraSoundWebService/80-output-docs_video/260320-screeingService-user-guide2_carotid.mp4 ./
+ 1830  ls -l
+ 1831  zip 260320-screeingService-user-guide2_carotid.zip 260320-screeingService-user-guide2_carotid.mp4
+ 1832  ls -l
+ 1833  md5sum ./260320-screeingService-user-guide2_carotid.mp4 
+ 1834  vim guidanceVideos_information.json 
+ 1835  mv 260320-screeingService-user-guide2_carotid.mp4 ./screeingService-user-guide_carotid_v001.260320.mp4
+ 1836  vim guidanceVideos_information.json 
+ 1837  cp ../../34-project_ML_data_models_UltrasoundIntelligence/00-scripts4ai_ML/models-process/uploadNewModelsPackage2S3.sh ./
+ 1838  mv uploadNewModelsPackage2S3.sh uploadNewGuidance2S3.sh 
+ 1839  vim uploadNewGuidance2S3.sh 
+ 1840  cat ./guidanceVideos_information.json 
+ 1841  vim uploadNewGuidance2S3.sh 
+ 1842  bash uploadNewGuidance2S3.sh ./screeingService-user-guide_carotid_v001.260320.mp4 
+ 1843  vim uploadNewGuidance2S3.sh 
+ 1844  https://yingling-s3test.s3.cn-north-1.amazonaws.com.cn/guidance/screeingService-user-guide_carotid_v001.260320.mp4
+ 1845  vim uploadNewGuidance2S3.sh 
+ 1846  cp ../../34-project_ML_data_models_UltrasoundIntelligence/00-scripts4ai_ML/models-process/updateS3ModelsInfo_forApp.sh ./
+ 1847  mv updateS3ModelsInfo_forApp.sh ./updateS3GuidanceInfo_forApp.sh 
+ 1848  vim updateS3GuidanceInfo_forApp.sh 
+ 1849  vim uploadNewGuidance2S3.sh 
+ 1850  vim updateS3GuidanceInfo_forApp.sh 
+ 1851  bash updateS3GuidanceInfo_forApp.sh ./guidanceVideos_information.json 
+ 1852  ls -l
+ 1853  cp screeingService-user-guide_thyroid_v001.260320.mp4
+ 1854  cp screeingService-user-guide_carotid_v001.260320.mp4  screeingService-user-guide_thyroid_v001.260320.mp4
+ 1855  ./uploadNewGuidance2S3.sh ./screeingService-user-guide_thyroid_v001.260320.mp4 
+ 1856  ls -l
+ 1857  cp updateS3GuidanceInfo_forApp.sh ../../34-project_ML_data_models_UltrasoundIntelligence/00-scripts4ai_ML/
+ 1858  cp uploadNewGuidance2S3.sh ../../34-project_ML_data_models_UltrasoundIntelligence/00-scripts4ai_ML/
+ 1859  cd ../../34-project_ML_data_models_UltrasoundIntelligence/00-scripts4ai_ML/
+ 1860  ls -l
+ 1861  mkdir guidance-files
+ 1862  mv updateS3GuidanceInfo_forApp.sh ./guidance-files/
+ 1863  mv uploadNewGuidance2S3.sh ./guidance-files/
+ 1864  git status
+ 1865  git add guidance-files/
+ 1866  git diff models-process/
+ 1867  vim models-process/generate-validation4ModelsPackage2S3.py
+ 1868  git add models-process/generate-validation4ModelsPackage2S3.py
+ 1869  git status
+ 1870  git commit -m "add giudance video download for pocus-app, and avoid name pair must same"
+ 1871  git push 
+ 1872  git remote -v
+ 1873  git push
+ 1874  git status
+ 1875  cd ~/00-srcs/
+ 1876  git clone git@github.com:bibaodi/cfgs4etonWS.git
+ 1877  cd cfgs4etonWS/
+ 1878  cd ..
+ 1879  mv cfgs4etonWS/ 00cfgs4etonWS/
+ 1880  cd 00cfgs4etonWS/
+ 1881  ls -l
+ 1882  mkdir configs
+ 1883  mkdir scripts-bash
+ 1884  mkdir scripts-py
+ 1885  mkdir scripts-cmake
+ 1886  vim README.md 
+ 1887  git status
+ 1888  git add README.md 
+ 1889  git status
+ 1890  cd scripts-
+ 1891  cd scripts-bash/
+ 1892  ls -kl
+ 1893  ls -l
+ 1894  ls /usr/local/bin/
+ 1895  vim /usr/local/bin/trainEc2-start-loop.sh 
+ 1896  cp /usr/local/bin/trainEc2-start-loop.sh ./\
+ 1897  cp /usr/local/bin/trainEc2-start-loop.sh ./
+ 1898  cp /usr/local/bin/*.sh ./ -i
+ 1899  ls -l
+ 1900  cat ./*.sh |less
+ 1901  vim copyfile2gitlabHost.sh 
+ 1902  vim copyfile2nextcloudHost.sh 
+ 1903  vim effectlib.sh
+ 1904  cat ./*.sh |grep pwd
+ 1905  gti status
+ 1906  mkdir usr.local.bin
+ 1907  mv ./*/sh ./usr.local.bin/
+ 1908  mv ./*.sh ./usr.local.bin/
+ 1909  ls -l
+ 1910  rm usr.local.bin/effectlib.sh 
+ 1911  ls
+ 1912  cd usr.local.bin/
+ 1913  cat ./* |less
+ 1914  rm ./ssh2*
+ 1915  ls -l
+ 1916  cat ./* |less
+ 1917  git status
+ 1918  git add ./
+ 1919  cd ..
+ 1920  git add README.md 
+ 1921  git status
+ 1922  git commit -m "add scripts"
+ 1923  git push
+ 1924  ssh2webUSIS.sh 
+ 1925  ls -l
+ 1926  cd ../
+ 1927  cd webUSIS.2
+ 1928  cd webUSIS.ruidong/
+ 1929  cd ../
+ 1930  ls -l
+ 1931  cd 33-carotid-webuis26/
+ 1932  git remote -v
+ 1933  ls
+ 1934  cd codeInRuidongGitea/
+ 1935  git status
+ 1936  git branch
+ 1937  git pull
+ 1938  git tags -l
+ 1939  git tag -l
+ 1940  git fetch tags
+ 1941  git fetch --tags
+ 1942  git tag -l
+ 1943  git tag v0.2.1 -m "support send report by wechat service account"
+ 1944  git push --tags
+ 1945  LocalSend-1.17.0-linux-x86-64.AppImage 
+ 1946  git pull
+ 1947  ssh2webUSIS.sh 
+ 1948  cd ~/42workspace.link/
+ 1949  ls
+ 1950  cd 33-project_webUSIS_UltraSoundWebService/
+ 1951  ls -l
+ 1952  cd ../31-project_handheldUS-APP_UltraSoundDevice/
+ 1953  ls -l
+ 1954  cd 41-guidanceVideo_download/
+ 1955  ls
+ 1956  cp guidanceVideos_information.json guidanceVideos_informationV1.json 
+ 1957  cp guidanceVideos_information.json guidanceVideos_informationV2.json 
+ 1958  vim guidanceVideos_informationV2.json 
+ 1959  ls -l
+ 1960  bash ../../34-project_ML_data_models_UltrasoundIntelligence/00-scripts4ai_ML/guidance-files/updateS3GuidanceInfo_forApp.sh ./guidanceVideos_informationV2.json 
+ 1961  code /home/eton/00-srcs/33-carotid-webuis26/
+ 1962  ls /usr/local/bin/
+ 1963  cat /usr/local/bin/portforward.sh 
+ 1964  vim /usr/local/bin/portforward.sh 
+ 1965  sudo cp /tmp/a /usr/local/bin/portforward-webUS.sh 
+ 1966  sudo chmod +x  /usr/local/bin/portforward-webUS.sh 
+ 1967  portforward-webUS.sh 
+ 1968  ssh2webUSIS.sh 
+ 1969  sudo chown eton:eton  /usr/local/bin/portforward-webUS.sh 
+ 1970  vim  /usr/local/bin/portforward-webUS.sh 
+ 1971  bash  /usr/local/bin/portforward-webUS.sh 
+ 1972  vim  /usr/local/bin/portforward-webUS.sh 
+ 1973  bash  /usr/local/bin/portforward-webUS.sh 
+ 1974  exit
+ 1975  ynote-desktop 
+ 1976  systemctl poweroff 
+ 1977  man tmux
+ 1978  joplin 
+ 1979  feishu
+ 1980  tmux
+ 1981  vim feedback-for-CV.md
+ 1982  exit
+ 1983  vim linwenbo-yanLei-zhangRui-CV-review.md
+ 1984  gsettings get org.gnome.desktop.session idle-delay
+ 1985  gsettings get org.gnome.desktop.screensaver lock-delay
+ 1986  gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+ 1987  gsettings get org.gnome.settings-daemon.plugins.power power-button-action
+ 1988  gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+ 1989  gsettings get org.gnome.settings-daemon.plugins.power power-button-action
+ 1990  gsettings set org.gnome.desktop.notifications show-in-lock-screen false
+ 1991  gsettings set org.gnome.desktop.interface enable-animations false
+ 1992  env
+ 1993  env|grep XDG
+ 1994  docker run --rm alpine echo "hello"
+ 1995  docker ps
+ 1996  docker run  alpine echo "hello"
+ 1997  docker ps
+ 1998  docker run  ubuntu echo "hello"
+ 1999  exit
+ 2000  ls
+ 2001  cd ..
+ 2002  ls -l
+ 2003  ls 260320-autoAnnotations/
+ 2004  cd 260320-autoAnnotations/
+ 2005  vim 11-loop-autolabel-nodule_v1.sh 
+ 2006  vim 03-removeOrphanImagesNoJson.sh 
+ 2007  history >> history.260320
